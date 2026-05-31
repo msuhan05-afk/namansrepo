@@ -1,0 +1,159 @@
+{
+  "hero": {
+    "name": "Naman Mehra",
+    "eyebrow": "Interactive portfolio system",
+    "headline": "Human-Centered Designer. Filmmaker. Builder.",
+    "cta": "Start Journey"
+  },
+  "designerProjects": [
+    {
+      "title": "MAI Health",
+      "role": "HCI + Product Design",
+      "overview": "A warmer digital care journey that turns medical complexity into calm decision points.",
+      "outcome": "Mapped service flows, patient tasks, and a responsive interface for better handoffs.",
+      "badge": "Care Quest"
+    },
+    {
+      "title": "Design System",
+      "role": "UX/UI Designer",
+      "overview": "A modular token-led system for faster product iteration across web surfaces.",
+      "outcome": "Reduced design drift and made interaction states predictable for engineers.",
+      "badge": "System Keeper"
+    },
+    {
+      "title": "Fintech Dashboard",
+      "role": "Product Designer",
+      "overview": "A dense but readable dashboard for monitoring money movement and risk.",
+      "outcome": "Improved scan speed through clearer hierarchy, filters, and alert language.",
+      "badge": "Signal Finder"
+    },
+    {
+      "title": "UX Research",
+      "role": "Research Facilitator",
+      "overview": "Interview, workshop, and synthesis work around human needs and product bets.",
+      "outcome": "Converted messy field notes into testable opportunity areas and prototypes.",
+      "badge": "Insight Badge"
+    }
+  ],
+  "builderModules": [
+    {
+      "title": "AI Concepts",
+      "detail": "Small agents, prompt tools, and interface probes."
+    },
+    {
+      "title": "HCI Experiments",
+      "detail": "Input, feedback, attention, and embodied interaction."
+    },
+    {
+      "title": "Web Applications",
+      "detail": "Next.js, Vite, motion systems, and product prototypes."
+    },
+    {
+      "title": "Startup Tools",
+      "detail": "Fast experiments that make an idea tangible enough to test."
+    }
+  ],
+  "filmProjects": [
+    "Documentaries",
+    "Commercials",
+    "Product Films",
+    "Motion Graphics"
+  ],
+  "explorerItems": [
+    "Kashmir light studies",
+    "Coffee counter notes",
+    "Train-window sketches",
+    "Book margin systems",
+    "Music for edits",
+    "Street photography"
+  ],
+  "achievements": [
+    {
+      "title": "Problem Solver",
+      "xp": 120,
+      "detail": "Turns ambiguity into clear next moves."
+    },
+    {
+      "title": "Story Teller",
+      "xp": 90,
+      "detail": "Shapes product work with rhythm and emotion."
+    },
+    {
+      "title": "Builder",
+      "xp": 140,
+      "detail": "Makes prototypes real enough to learn from."
+    },
+    {
+      "title": "Photographer",
+      "xp": 80,
+      "detail": "Notices framing, light, and quiet moments."
+    },
+    {
+      "title": "Explorer",
+      "xp": 110,
+      "detail": "Collects references from places and people."
+    },
+    {
+      "title": "Workshop Facilitator",
+      "xp": 95,
+      "detail": "Creates rooms where ideas can move."
+    },
+    {
+      "title": "Product Designer",
+      "xp": 150,
+      "detail": "Balances systems, craft, and usefulness."
+    },
+    {
+      "title": "Human-Centered Thinker",
+      "xp": 200,
+      "detail": "Starts with people, ends with better tools."
+    }
+  ],
+  "timeline": [
+    {
+      "title": "Camera",
+      "detail": "Learning to see scenes, timing, and emotion."
+    },
+    {
+      "title": "Design",
+      "detail": "Turning observation into usable interfaces."
+    },
+    {
+      "title": "Engineering",
+      "detail": "Building enough to test the feeling."
+    },
+    {
+      "title": "HCI",
+      "detail": "Studying people, systems, and interaction."
+    },
+    {
+      "title": "Product",
+      "detail": "Shipping decisions that respect context."
+    },
+    {
+      "title": "Worlds",
+      "detail": "Making portfolios, tools, and stories feel alive."
+    }
+  ],
+  "aboutCards": [
+    {
+      "title": "What I Do",
+      "body": "Design interfaces, systems, stories, and prototypes that help ideas become understandable."
+    },
+    {
+      "title": "What I Believe",
+      "body": "Technology feels better when it respects attention, emotion, culture, and context."
+    },
+    {
+      "title": "How I Work",
+      "body": "Observe closely, make the smallest useful version, test the feeling, then refine with care."
+    }
+  ],
+  "contact": {
+    "headline": "Ready to build something meaningful together?",
+    "subhead": "Bring the brief, the half-formed idea, or the wild prototype. The campfire is on.",
+    "email": "mailto:hello@namanmehra.com",
+    "linkedin": "https://www.linkedin.com/",
+    "resume": "#about"
+  }
+}

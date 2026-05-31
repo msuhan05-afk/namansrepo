@@ -3,6 +3,7 @@ import "./globals.css";
 import { CustomCursor } from "@/components/custom-cursor";
 import { ScrollProgress } from "@/components/scroll-progress";
 import { SmoothScroll } from "@/components/smooth-scroll";
+import { Nav } from "@/components/nav";
 
 export const metadata: Metadata = {
   title: "Naman Mehra | Designer · Builder · Storyteller",
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="antialiased overflow-x-hidden">
         <ScrollProgress />
         <CustomCursor />
+        <Nav />
         <SmoothScroll>{children}</SmoothScroll>
       </body>
     </html>

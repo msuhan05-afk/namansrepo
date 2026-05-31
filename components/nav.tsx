@@ -2,15 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 
 const links = [
-  { label: "Work", href: "#projects" },
-  { label: "About", href: "#about" },
-  { label: "Contact", href: "#contact" },
+  { label: "About", href: "/about" },
+  { label: "Journey", href: "/journey" },
+  { label: "Work", href: "/projects" },
+  { label: "Universe", href: "/universe" },
+  { label: "Skills", href: "/skills" },
 ];
 
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 80);
@@ -29,29 +34,31 @@ export function Nav() {
           : "bg-transparent"
       }`}
     >
-      <a
-        href="#"
+      <Link
+        href="/"
         className="font-mono text-xl font-bold tracking-tight text-[#F97316] hover:opacity-80 transition-opacity"
       >
         NM
-      </a>
+      </Link>
 
       <nav className="flex items-center gap-8">
         {links.map((link) => (
-          <a
+          <Link
             key={link.label}
             href={link.href}
-            className="text-sm font-medium text-white/70 hover:text-white transition-colors duration-200 tracking-wide"
+            className={`text-sm font-medium transition-colors duration-200 tracking-wide ${
+              pathname === link.href ? "text-white" : "text-white/50 hover:text-white"
+            }`}
           >
             {link.label}
-          </a>
+          </Link>
         ))}
-        <a
-          href="#contact"
+        <Link
+          href="/contact"
           className="rounded-full border border-[#F97316] px-4 py-1.5 text-sm font-medium text-[#F97316] hover:bg-[#F97316] hover:text-black transition-all duration-200"
         >
           Hire Me
-        </a>
+        </Link>
       </nav>
     </motion.header>
   );

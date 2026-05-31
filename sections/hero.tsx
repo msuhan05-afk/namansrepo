@@ -201,7 +201,7 @@ export function HeroSection() {
 
           <motion.div variants={itemVariants} className="mt-8">
             <a
-              href="#about"
+              href="/about"
               className="inline-flex items-center gap-2 rounded-full bg-[#F97316] px-6 py-3 text-sm font-semibold text-black hover:bg-[#ea6a0e] transition-all duration-200 hover:scale-105 hover:shadow-[0_0_30px_rgba(249,115,22,0.4)]"
             >
               Explore My Journey

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>About — with 3D Model</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; line-height: 1.6; }
+  h1 { margin-bottom: 4px; }
+  .viewer { width: 100%; height: 420px; border: 1px solid #ccc; border-radius: 8px; margin: 20px 0; }
+  p { color: #333; }
+  @media (prefers-color-scheme: dark) { p { color: #ddd; } .viewer { border-color: #333; } }
+</style>
+</head>
+<body>
+  <h1>My 3D Showcase</h1>
+  <p>Welcome. Below is an interactive 3D model — drag to rotate, scroll to zoom, right-drag to pan.</p>
+
+  <iframe class="viewer" src="index.html" title="3D Model" loading="lazy"></iframe>
+
+  <h2>About</h2>
+  <p>This page embeds a GLB model rendered with three.js. The viewer is a self-contained page (<code>index.html</code>) loading <code>models/model.glb</code>. The rest of this site is plain text.</p>
+
+  <h2>Notes</h2>
+  <p>Use the HUD inside the viewer to toggle auto-rotate, change background, adjust lighting, or switch to wireframe.</p>
+
+  <p><a href="index.html">Open viewer fullscreen →</a></p>
+</body>
+</html>

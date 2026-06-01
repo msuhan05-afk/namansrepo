@@ -35,7 +35,7 @@
   <div id="hud">
     <h1>Interactive 3D Model</h1>
     <div style="opacity:0.7;font-size:12px;">Drag to rotate · Scroll to zoom · Right-drag to pan</div>
-    <div class="row"><label>Auto-rotate</label><input id="autorotate" type="checkbox" checked /></div>
+    <div class="row"><label>Auto-rotate</label><input id="autorotate" type="checkbox" /></div>
     <div class="row"><label>Speed</label><input id="speed" type="range" min="0" max="5" step="0.1" value="1" /></div>
     <div class="row"><label>Light</label><input id="light" type="range" min="0" max="3" step="0.05" value="1.1" /></div>
     <div class="row"><label>BG</label>
@@ -93,7 +93,7 @@
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
-    controls.autoRotate = true;
+    controls.autoRotate = false;
     controls.autoRotateSpeed = 1.0;
 
     let model = null;

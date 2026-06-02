@@ -1,187 +1,626 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Interactive 3D Viewer</title>
+<meta charset="UTF-8"/>
+<title>夜の街 — Yoru no Machi</title>
 <style>
-  html, body { margin: 0; height: 100%; background: #0b0d12; color: #e7e9ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; overflow: hidden; }
-  #app { position: fixed; inset: 0; }
-  #hud {
-    position: fixed; top: 14px; left: 14px; z-index: 10;
-    background: rgba(20, 22, 30, 0.7); backdrop-filter: blur(8px);
-    padding: 12px 14px; border-radius: 10px; font-size: 13px; line-height: 1.45;
-    border: 1px solid rgba(255,255,255,0.08); max-width: 280px;
-  }
-  #hud h1 { font-size: 14px; margin: 0 0 6px; font-weight: 600; }
-  #hud .row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-  #hud label { opacity: 0.8; min-width: 70px; }
-  #hud input[type=range] { flex: 1; }
-  #hud button {
-    background: #2a3142; color: #e7e9ee; border: 1px solid rgba(255,255,255,0.1);
-    padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;
-  }
-  #hud button:hover { background: #353d52; }
-  #loading {
-    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-    background: #0b0d12; z-index: 20; font-size: 14px; opacity: 0.8;
-  }
-  #loading.hidden { display: none; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#04000f;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;overflow:hidden;font-family:Georgia,serif}
+canvas{display:block;border:2px solid #ff6eb455;box-shadow:0 0 40px #9b59b640,0 0 80px #ff6eb420}
+#sub{color:#ff6eb488;font-size:12px;margin-top:8px;letter-spacing:3px;text-align:center}
 </style>
 </head>
 <body>
-  <div id="app"></div>
-  <div id="loading">Loading 3D model…</div>
-  <div id="hud">
-    <h1>Interactive 3D Model</h1>
-    <div style="opacity:0.7;font-size:12px;">Drag to rotate · Scroll to zoom · Right-drag to pan</div>
-    <div class="row"><label>Auto-rotate</label><input id="autorotate" type="checkbox" checked /></div>
-    <div class="row"><label>Speed</label><input id="speed" type="range" min="0" max="5" step="0.1" value="1" /></div>
-    <div class="row"><label>Light</label><input id="light" type="range" min="0" max="3" step="0.05" value="1.1" /></div>
-    <div class="row"><label>BG</label>
-      <select id="bg" style="flex:1;background:#2a3142;color:#e7e9ee;border:1px solid rgba(255,255,255,0.1);padding:4px;border-radius:6px;">
-        <option value="#0b0d12">Dark</option>
-        <option value="#1a1f2e">Slate</option>
-        <option value="#f3f4f6">Light</option>
-        <option value="#000000">Black</option>
-      </select>
-    </div>
-    <div class="row"><button id="reset">Reset view</button><button id="wire">Wireframe</button></div>
-  </div>
+<canvas id="c"></canvas>
+<div id="sub">← → / A D &nbsp;MOVE &nbsp;·&nbsp; SHIFT &nbsp;RUN &nbsp;·&nbsp; SPACE / ↑ &nbsp;JUMP &nbsp;·&nbsp; 夜の街</div>
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+canvas.width=900; canvas.height=500;
 
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-    }
+const W=canvas.width, H=canvas.height;
+const GROUND_Y=H*0.74;
+const ROAD_H=H-GROUND_Y;
+const WALK_Y=GROUND_Y-2;
+
+// ── seeded RNG ────────────────────────────────────────────────────────────────
+function rng(seed){
+  let s=seed|0;
+  return()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+}
+
+// ── palette ───────────────────────────────────────────────────────────────────
+const NEONS=['#ff6eb4','#00e5ff','#ffe066','#cc44ff','#ff4466','#44ffaa'];
+
+// ── building generator ────────────────────────────────────────────────────────
+function genBuildings(count,minW,maxW,minH,maxH,seed){
+  const r=rng(seed), list=[]; let x=-300;
+  for(let i=0;i<count;i++){
+    const w=minW+r()*(maxW-minW)|0, h=minH+r()*(maxH-minH)|0;
+    list.push({x,w,h,neon:NEONS[Math.floor(r()*NEONS.length)],hasNeon:r()>0.45,tag:r()});
+    x+=w+(r()*30-5|0);
   }
-  </script>
+  return list;
+}
 
-  <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+const TILE=2400;
+const LAYERS=[
+  {spd:0.08, blds:genBuildings(80,40,90,60,130,11),   gY:0.60, alpha:0.55, dark:'#100d22', side:'#0a0818'},
+  {spd:0.18, blds:genBuildings(55,60,130,80,190,22),  gY:0.62, alpha:0.75, dark:'#181235', side:'#0f0c28'},
+  {spd:0.38, blds:genBuildings(38,80,160,100,240,33), gY:0.64, alpha:0.90, dark:'#1e1545', side:'#130f30'},
+  {spd:0.65, blds:genBuildings(26,100,200,130,300,44),gY:0.67, alpha:1.00, dark:'#120e30', side:'#0a0820'},
+];
 
-    const container = document.getElementById('app');
-    const loadingEl = document.getElementById('loading');
+// ── stars (tile across canvas width) ─────────────────────────────────────────
+const STARS=Array.from({length:160},(_,i)=>{
+  const r2=rng(i*77+3);
+  return{x:r2()*W, y:r2()*H*0.52, rad:r2()*1.4+0.3, phase:r2()*Math.PI*2};
+});
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#0b0d12');
+// ── foreground props ──────────────────────────────────────────────────────────
+const LAMPS =Array.from({length:12},(_,i)=>({baseX:i*160+40}));
+const TREES =Array.from({length:8}, (_,i)=>({baseX:i*220+100}));
+const POLES =Array.from({length:10},(_,i)=>({baseX:i*190+60}));
+const VENDS =[
+  {baseX:320,  c1:'#00e5ff',c2:'#ff6eb4'},
+  {baseX:710,  c1:'#ffe066',c2:'#44ffaa'},
+  {baseX:1120, c1:'#ff6eb4',c2:'#cc44ff'},
+  {baseX:1540, c1:'#44ffaa',c2:'#00e5ff'},
+];
 
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
-    camera.position.set(2, 1.5, 3);
+// ── petals ────────────────────────────────────────────────────────────────────
+const PETALS=Array.from({length:22},(_,i)=>{
+  const r2=rng(i*31+7);
+  return{ox:r2()*W*2, oy:r2()*H*0.8, spd:r2()*0.4+0.2, drift:r2()*1.5+0.5, phase:r2()*Math.PI*2, sz:r2()*4+2};
+});
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    container.appendChild(renderer.domElement);
+// ── NPCs (world-space walkers on sidewalk) ────────────────────────────────────
+const NPCS=[
+  {wx:250,  spd:1.1, dir: 1, c:'#3377dd', walkT:0},
+  {wx:650,  spd:0.9, dir:-1, c:'#dd7733', walkT:20},
+  {wx:1050, spd:1.4, dir: 1, c:'#33bb77', walkT:10},
+  {wx:420,  spd:1.0, dir:-1, c:'#aa33cc', walkT:35},
+  {wx:870,  spd:0.7, dir: 1, c:'#ee5555', walkT:5},
+  {wx:1350, spd:1.2, dir:-1, c:'#2299cc', walkT:42},
+];
 
-    const pmrem = new THREE.PMREMGenerator(renderer);
-    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+// ── cars (world-space, drive on road) ─────────────────────────────────────────
+const CARS=[
+  {wx:150,  spd:3.0, dir: 1, lane:0.22, c:'#cc2233'},
+  {wx:480,  spd:2.2, dir:-1, lane:0.58, c:'#2244cc'},
+  {wx:760,  spd:2.8, dir: 1, lane:0.22, c:'#22bb66'},
+  {wx:320,  spd:1.9, dir:-1, lane:0.58, c:'#cc8811'},
+  {wx:920,  spd:3.4, dir: 1, lane:0.22, c:'#884488'},
+];
 
-    const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 0.6);
-    scene.add(hemi);
-    const dir = new THREE.DirectionalLight(0xffffff, 1.0);
-    dir.position.set(5, 8, 5);
-    scene.add(dir);
+// ── input / state ─────────────────────────────────────────────────────────────
+const keys={};
+document.addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(['Space','ArrowLeft','ArrowRight','ArrowUp','ShiftLeft','ShiftRight'].includes(e.code))e.preventDefault();
+});
+document.addEventListener('keyup',e=>{keys[e.code]=false;});
 
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 1.0;
+const S={
+  scrollX:0, tick:0, dist:0,
+  player:{x:W/2, y:WALK_Y, vy:0, onGround:true, dir:1, walkT:0, moving:false},
+};
 
-    let model = null;
-    let initialCamPos = camera.position.clone();
-    let initialTarget = new THREE.Vector3(0, 0, 0);
-    let wireframeOn = false;
+// ── helpers ───────────────────────────────────────────────────────────────────
+function hexA(hex,a){return hex+Math.max(0,Math.min(255,a|0)).toString(16).padStart(2,'0');}
+function bright(hex,n){
+  let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return`#${Math.min(255,r+n).toString(16).padStart(2,'0')}${Math.min(255,g+n).toString(16).padStart(2,'0')}${Math.min(255,b+n).toString(16).padStart(2,'0')}`;
+}
+function rrect(x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
 
-    const loader = new GLTFLoader();
-    loader.load(
-      'models/model.glb',
-      (gltf) => {
-        model = gltf.scene;
+// ══════════════════════════════════════════════════════════════════════════════
+//  DRAW — sky
+// ══════════════════════════════════════════════════════════════════════════════
+function drawSky(){
+  const g=ctx.createLinearGradient(0,0,0,H*0.75);
+  g.addColorStop(0,'#04000f'); g.addColorStop(0.3,'#0a0020');
+  g.addColorStop(0.6,'#130838'); g.addColorStop(1,'#2a1060');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H*0.75);
+}
 
-        const box = new THREE.Box3().setFromObject(model);
-        const size = box.getSize(new THREE.Vector3()).length();
-        const center = box.getCenter(new THREE.Vector3());
+function drawMoon(){
+  const mx=W*0.78, my=H*0.14;
+  const g=ctx.createRadialGradient(mx,my,8,mx,my,70);
+  g.addColorStop(0,'#ffffff28'); g.addColorStop(1,'transparent');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(mx,my,70,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#fff6e0'; ctx.beginPath(); ctx.arc(mx,my,24,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#080018'; ctx.beginPath(); ctx.arc(mx+10,my-4,20,0,Math.PI*2); ctx.fill();
+}
 
-        model.position.sub(center);
-        scene.add(model);
+function drawStars(t){
+  STARS.forEach(s=>{
+    const alpha=0.4+0.55*Math.abs(Math.sin(s.phase+t*0.0018));
+    const sx=((s.x-S.scrollX*0.015)%W+W)%W;
+    ctx.fillStyle=`rgba(255,255,255,${alpha.toFixed(2)})`;
+    ctx.beginPath(); ctx.arc(sx,s.y,s.rad,0,Math.PI*2); ctx.fill();
+  });
+}
 
-        const dist = size * 1.2;
-        camera.position.set(dist, dist * 0.6, dist);
-        camera.near = size / 100;
-        camera.far = size * 100;
-        camera.updateProjectionMatrix();
+// ══════════════════════════════════════════════════════════════════════════════
+//  DRAW — buildings (one parallax layer)
+// ══════════════════════════════════════════════════════════════════════════════
+function drawLayer(layer,t){
+  const groundY=H*layer.gY;
+  const off=(-S.scrollX*layer.spd%TILE+TILE)%TILE;
+  layer.blds.forEach(b=>{
+    for(let tile=-TILE;tile<=TILE+W;tile+=TILE){
+      const bx=b.x+off+tile, by=groundY-b.h;
+      if(bx+b.w<-60||bx>W+60) continue;
+      ctx.globalAlpha=layer.alpha;
 
-        controls.target.set(0, 0, 0);
-        controls.maxDistance = size * 5;
-        controls.minDistance = size * 0.1;
-        controls.update();
+      // front face gradient
+      const fg=ctx.createLinearGradient(bx,by,bx+b.w,groundY);
+      fg.addColorStop(0,layer.dark); fg.addColorStop(1,bright(layer.dark,15));
+      ctx.fillStyle=fg; ctx.fillRect(bx,by,b.w,b.h);
 
-        initialCamPos = camera.position.clone();
-        initialTarget = controls.target.clone();
+      // side face
+      const sw=Math.min(14,b.w*0.12)|0;
+      ctx.fillStyle=layer.side;
+      ctx.beginPath(); ctx.moveTo(bx+b.w,by); ctx.lineTo(bx+b.w+sw,by+sw*0.6);
+      ctx.lineTo(bx+b.w+sw,groundY+sw*0.6); ctx.lineTo(bx+b.w,groundY); ctx.closePath(); ctx.fill();
 
-        loadingEl.classList.add('hidden');
-      },
-      (xhr) => {
-        if (xhr.total) {
-          const pct = Math.round((xhr.loaded / xhr.total) * 100);
-          loadingEl.textContent = `Loading 3D model… ${pct}%`;
-        }
-      },
-      (err) => {
-        loadingEl.textContent = 'Failed to load model.';
-        console.error(err);
+      // top face
+      ctx.fillStyle=bright(layer.dark,25);
+      ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx+b.w,by);
+      ctx.lineTo(bx+b.w+sw,by+sw*0.6); ctx.lineTo(bx+sw,by+sw*0.6); ctx.closePath(); ctx.fill();
+
+      // windows
+      const wc=Math.max(1,b.w/22|0), wr=Math.max(2,b.h/28|0);
+      const wCol=b.hasNeon?b.neon:'#ffee88';
+      for(let r=0;r<wr;r++) for(let c=0;c<wc;c++){
+        if(((r*7+c*5+b.tag*31|0)%5)===0) continue;
+        const flk=b.hasNeon&&((t*0.05+b.tag*17+r+c)%60<1)?0.2:1;
+        ctx.fillStyle=hexA(wCol,180*flk); ctx.fillRect(bx+6+c*19,by+10+r*25,10,15);
+        ctx.fillStyle=hexA(wCol,30);       ctx.fillRect(bx+3+c*19,by+7+r*25,16,21);
       }
-    );
 
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    document.getElementById('autorotate').addEventListener('change', (e) => {
-      controls.autoRotate = e.target.checked;
-    });
-    document.getElementById('speed').addEventListener('input', (e) => {
-      controls.autoRotateSpeed = parseFloat(e.target.value);
-    });
-    document.getElementById('light').addEventListener('input', (e) => {
-      renderer.toneMappingExposure = parseFloat(e.target.value);
-    });
-    document.getElementById('bg').addEventListener('change', (e) => {
-      scene.background = new THREE.Color(e.target.value);
-    });
-    document.getElementById('reset').addEventListener('click', () => {
-      camera.position.copy(initialCamPos);
-      controls.target.copy(initialTarget);
-      controls.update();
-    });
-    document.getElementById('wire').addEventListener('click', () => {
-      if (!model) return;
-      wireframeOn = !wireframeOn;
-      model.traverse((o) => {
-        if (o.isMesh && o.material) {
-          const mats = Array.isArray(o.material) ? o.material : [o.material];
-          mats.forEach((m) => { m.wireframe = wireframeOn; });
-        }
-      });
-    });
-
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
+      // neon sign
+      if(b.hasNeon&&b.w>80){
+        const flk=Math.sin(t*0.004*((b.tag%3)+1)+b.tag*5)>0.85?0.25:1;
+        ctx.shadowColor=b.neon; ctx.shadowBlur=12*flk;
+        ctx.strokeStyle=hexA(b.neon,220*flk); ctx.lineWidth=2.5;
+        const sy=by+b.h*0.35;
+        ctx.strokeRect(bx+8,sy,b.w-16,22);
+        ctx.beginPath();
+        for(let n=0;n<3;n++){ctx.moveTo(bx+16+n*20,sy+6);ctx.lineTo(bx+26+n*20,sy+6);ctx.moveTo(bx+16+n*20,sy+14);ctx.lineTo(bx+26+n*20,sy+14);}
+        ctx.stroke(); ctx.shadowBlur=0;
+      }
+      ctx.globalAlpha=1;
     }
-    animate();
-  </script>
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DRAW — power lines
+// ══════════════════════════════════════════════════════════════════════════════
+function drawPowerLines(){
+  const poleH=130, wireY=GROUND_Y-poleH;
+  const spd=0.88;
+  const xs=[];
+  POLES.forEach(p=>{
+    const px=((p.baseX-S.scrollX*spd)%(W+400)+W+400)%(W+400)-200;
+    xs.push(px);
+    if(px<-80||px>W+80) return;
+    ctx.strokeStyle='#2a2840'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(px,GROUND_Y-20); ctx.lineTo(px,wireY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px-18,wireY+10); ctx.lineTo(px+18,wireY+10); ctx.stroke();
+    ctx.fillStyle='#3a3860';
+    ctx.fillRect(px-18,wireY+8,4,6); ctx.fillRect(px+14,wireY+8,4,6);
+  });
+  // drooping wires
+  ctx.strokeStyle='#1a1a3066'; ctx.lineWidth=1;
+  for(let i=0;i<xs.length-1;i++){
+    const x1=xs[i]-18, x2=xs[i+1]-18;
+    if(Math.abs(x2-x1)>500) continue;
+    const mid=(x1+x2)/2;
+    ctx.beginPath(); ctx.moveTo(x1,wireY+10); ctx.quadraticCurveTo(mid,wireY+24,x2,wireY+10); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x1+36,wireY+10); ctx.quadraticCurveTo(mid+36,wireY+24,x2+36,wireY+10); ctx.stroke();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DRAW — road
+// ══════════════════════════════════════════════════════════════════════════════
+function drawRoad(){
+  // sidewalk
+  ctx.fillStyle='#22203a'; ctx.fillRect(0,GROUND_Y-22,W,22);
+  ctx.fillStyle='#2e2c48'; ctx.fillRect(0,GROUND_Y-24,W,3);
+  ctx.fillStyle='#0e0d1c'; ctx.fillRect(0,GROUND_Y-2, W,3);
+
+  // road gradient
+  const rg=ctx.createLinearGradient(0,GROUND_Y,0,H);
+  rg.addColorStop(0,'#18182e'); rg.addColorStop(1,'#0a0a1a');
+  ctx.fillStyle=rg; ctx.fillRect(0,GROUND_Y,W,ROAD_H);
+
+  // centre dashes
+  const dashOff=(-S.scrollX%80+80)%80;
+  ctx.save(); ctx.strokeStyle='#ffff5566'; ctx.lineWidth=2.5;
+  ctx.setLineDash([38,38]); ctx.lineDashOffset=-dashOff;
+  ctx.beginPath(); ctx.moveTo(0,GROUND_Y+ROAD_H*0.38); ctx.lineTo(W,GROUND_Y+ROAD_H*0.38);
+  ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+
+  // edge line
+  ctx.strokeStyle='#ffffff1a'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(0,GROUND_Y+ROAD_H*0.1); ctx.lineTo(W,GROUND_Y+ROAD_H*0.1); ctx.stroke();
+
+  // puddles
+  for(let i=0;i<5;i++){
+    const px=((i*200-S.scrollX*0.85)%(W+300)+W+300)%(W+300)-150;
+    ctx.fillStyle='rgba(80,80,180,0.07)';
+    ctx.beginPath(); ctx.ellipse(px,GROUND_Y+ROAD_H*0.65,45+i*8,5,0,0,Math.PI*2); ctx.fill();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DRAW — vending machines
+// ══════════════════════════════════════════════════════════════════════════════
+function drawVends(t){
+  VENDS.forEach(v=>{
+    const vx=((v.baseX-S.scrollX*0.98)%(W+600)+W+600)%(W+600)-300;
+    if(vx<-60||vx>W+60) return;
+    const vy=GROUND_Y-54, flk=0.85+0.15*Math.sin(t*0.003+v.baseX);
+    ctx.shadowColor=v.c1; ctx.shadowBlur=16*flk;
+    ctx.fillStyle='#1a1830'; rrect(vx,vy,28,54,3); ctx.fill();
+    ctx.fillStyle=v.c1+'33'; rrect(vx+2,vy+2,24,50,2); ctx.fill();
+    for(let r=0;r<3;r++){
+      ctx.fillStyle=(r%2===0?v.c1:v.c2)+'99';
+      ctx.fillRect(vx+4,vy+5+r*15,20,12);
+    }
+    ctx.fillStyle='#000'; ctx.fillRect(vx+8,vy+51,12,3);
+    // glow on sidewalk
+    const sg=ctx.createRadialGradient(vx+14,GROUND_Y,0,vx+14,GROUND_Y,40);
+    sg.addColorStop(0,v.c1+'20'); sg.addColorStop(1,'transparent');
+    ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(vx+14,GROUND_Y,40,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DRAW — lamp posts
+// ══════════════════════════════════════════════════════════════════════════════
+function drawLamps(t){
+  LAMPS.forEach(l=>{
+    const lx=((l.baseX-S.scrollX)%(W+200)+W+200)%(W+200)-100;
+    if(lx<-60||lx>W+60) return;
+    const pulse=1+0.04*Math.sin(t*0.002+l.baseX);
+    const bx=lx+22, by=GROUND_Y-115;
+
+    // light cone on road
+    const cone=ctx.createRadialGradient(bx,by,0,bx,GROUND_Y+10,85*pulse);
+    cone.addColorStop(0,'rgba(255,200,100,0.14)'); cone.addColorStop(1,'transparent');
+    ctx.fillStyle=cone; ctx.beginPath(); ctx.arc(bx,GROUND_Y+10,85*pulse,0,Math.PI*2); ctx.fill();
+
+    // post
+    ctx.strokeStyle='#383858'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(lx,GROUND_Y-18); ctx.lineTo(lx,GROUND_Y-95); ctx.lineTo(bx,by+3); ctx.stroke();
+
+    // halo
+    const hg=ctx.createRadialGradient(bx,by,0,bx,by,55*pulse);
+    hg.addColorStop(0,'#ffcc6650'); hg.addColorStop(0.4,'#ff990020'); hg.addColorStop(1,'transparent');
+    ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(bx,by,55*pulse,0,Math.PI*2); ctx.fill();
+
+    // bulb + lantern
+    ctx.fillStyle='#ffffcc'; ctx.beginPath(); ctx.arc(bx,by,6,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#cc5500aa'; ctx.fillRect(bx-8,by-6,16,12);
+    ctx.strokeStyle='#ff8833'; ctx.lineWidth=1; ctx.strokeRect(bx-8,by-6,16,12);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DRAW — cherry trees
+// ══════════════════════════════════════════════════════════════════════════════
+function drawTrees(t){
+  TREES.forEach(tr=>{
+    const tx=((tr.baseX-S.scrollX*0.92)%(W+300)+W+300)%(W+300)-150;
+    if(tx<-100||tx>W+100) return;
+    ctx.strokeStyle='#2d1a0a'; ctx.lineWidth=6;
+    ctx.beginPath(); ctx.moveTo(tx,GROUND_Y-18); ctx.lineTo(tx,GROUND_Y-82); ctx.stroke();
+    ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(tx,GROUND_Y-68); ctx.lineTo(tx-28,GROUND_Y-105);
+    ctx.moveTo(tx,GROUND_Y-68); ctx.lineTo(tx+22,GROUND_Y-100); ctx.stroke();
+    for(let b=0;b<16;b++){
+      const ang=(b/16)*Math.PI*2+Math.sin(t*0.0015+tr.baseX*0.01)*0.15;
+      const rad=28+Math.sin(b*2.3)*10;
+      ctx.fillStyle='#ffb7d5bb';
+      ctx.beginPath(); ctx.arc(tx+Math.cos(ang)*rad,GROUND_Y-92+Math.sin(ang)*rad*0.55,7+Math.sin(b*1.9)*3.5,0,Math.PI*2); ctx.fill();
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DRAW — falling petals
+// ══════════════════════════════════════════════════════════════════════════════
+function drawPetals(t){
+  PETALS.forEach(p=>{
+    const px=((p.ox+Math.sin(p.phase+t*0.001)*80-S.scrollX*0.25)%W+W)%W;
+    const py=((t*p.spd+p.phase*60)%700)%(H+30)-20;
+    const alpha=0.3+0.55*Math.abs(Math.sin(p.phase+t*0.002));
+    ctx.save(); ctx.translate(px,py); ctx.rotate(t*0.003*p.drift+p.phase);
+    ctx.fillStyle=`rgba(255,185,210,${alpha.toFixed(2)})`;
+    ctx.beginPath(); ctx.ellipse(0,0,p.sz,p.sz*0.45,0,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DRAW — NPC walker
+// ══════════════════════════════════════════════════════════════════════════════
+function drawNPC(npc){
+  const sx=npc.wx-S.scrollX;
+  if(sx<-60||sx>W+60) return;
+  const wt=npc.walkT, ls=Math.sin(wt*0.25)*5, as=Math.sin(wt*0.25)*4;
+  ctx.save();
+  ctx.translate(sx|0, WALK_Y|0);
+  ctx.scale(npc.dir<0?-0.80:0.80, 0.80);
+
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.18)';
+  ctx.beginPath(); ctx.ellipse(0,2,13,3,0,0,Math.PI*2); ctx.fill();
+
+  // legs
+  ctx.fillStyle='#201838';
+  ctx.fillRect(-8,16,7,18+ls); ctx.fillRect(2,16,7,18-ls);
+  ctx.fillStyle='#ffffff99';
+  ctx.fillRect(-9,34+ls,10,4); ctx.fillRect(1,34-ls,10,4);
+
+  // body (kimono)
+  ctx.fillStyle=npc.c; ctx.fillRect(-9,2,18,16);
+  ctx.fillStyle='#ffffff88';
+  ctx.beginPath(); ctx.moveTo(-3,2); ctx.lineTo(3,2); ctx.lineTo(0,10); ctx.closePath(); ctx.fill();
+  ctx.fillStyle=bright(npc.c,30)+'bb'; ctx.fillRect(-9,13,18,4);
+
+  // arms
+  ctx.fillStyle=npc.c;
+  ctx.fillRect(-15,4+as,7,13); ctx.fillRect(9,4-as,7,13);
+
+  // head
+  ctx.fillStyle='#f5c5a0'; ctx.beginPath(); ctx.arc(0,-5,10,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#1a0800';
+  ctx.beginPath(); ctx.arc(0,-6,10,Math.PI,0); ctx.fill();
+  ctx.fillRect(-10,-8,20,4);
+
+  // eyes
+  ctx.fillStyle='#fff'; ctx.fillRect(-5,-8,4,3); ctx.fillRect(2,-8,4,3);
+  ctx.fillStyle='#000'; ctx.fillRect(-4,-8,2,3); ctx.fillRect(3,-8,2,3);
+
+  ctx.restore();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DRAW — car
+// ══════════════════════════════════════════════════════════════════════════════
+function drawCar(car){
+  const sx=car.wx-S.scrollX;
+  if(sx<-130||sx>W+130) return;
+  const cy=GROUND_Y+ROAD_H*car.lane;
+  const CW=56, CH=22;
+  const flip=car.dir<0;
+
+  ctx.save();
+  if(flip){ctx.scale(-1,1);ctx.translate(-W,0);}
+  const x=flip?W-sx:sx;
+
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.28)';
+  ctx.beginPath(); ctx.ellipse(x,cy+CH-3,CW*0.75,4,0,0,Math.PI*2); ctx.fill();
+
+  // body
+  ctx.shadowColor=car.c; ctx.shadowBlur=8;
+  ctx.fillStyle=car.c; rrect(x-CW/2,cy-CH,CW,CH,5); ctx.fill();
+  ctx.shadowBlur=0;
+
+  // cabin roof
+  ctx.fillStyle=bright(car.c,-25);
+  rrect(x-CW/2+9,cy-CH-13,CW-18,14,4); ctx.fill();
+
+  // windshield
+  ctx.fillStyle='#aaeeff44';
+  rrect(x-CW/2+11,cy-CH-11,CW-22,12,3); ctx.fill();
+
+  // headlight beam
+  const hx=x+CW/2-4, hy=cy-CH/2;
+  const hg=ctx.createRadialGradient(hx,hy,0,hx+20,hy,50);
+  hg.addColorStop(0,'rgba(255,240,200,0.55)'); hg.addColorStop(1,'transparent');
+  ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(hx+20,hy,50,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#ffffcc'; ctx.fillRect(hx-2,hy-3,5,6);
+
+  // taillights
+  ctx.shadowColor='#ff0000'; ctx.shadowBlur=6;
+  ctx.fillStyle='#ff3333'; ctx.fillRect(x-CW/2-2,hy-3,4,6);
+  ctx.shadowBlur=0;
+
+  // wheels
+  ctx.fillStyle='#111';
+  ctx.beginPath(); ctx.arc(x-CW/2+13,cy-1,7,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+CW/2-13,cy-1,7,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#444'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(x-CW/2+13,cy-1,4,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x+CW/2-13,cy-1,4,0,Math.PI*2); ctx.stroke();
+
+  ctx.restore();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DRAW — player character
+// ══════════════════════════════════════════════════════════════════════════════
+function drawPlayer(){
+  const p=S.player, x=p.x|0, y=p.y|0;
+  const flip=p.dir<0;
+  const wt=p.moving&&p.onGround?p.walkT:0;
+  const ls=Math.sin(wt*0.22)*7, as=Math.sin(wt*0.22)*6;
+
+  // ground shadow
+  ctx.fillStyle='rgba(0,0,0,0.25)';
+  ctx.beginPath(); ctx.ellipse(x,GROUND_Y+1,15,4,0,0,Math.PI*2); ctx.fill();
+
+  ctx.save();
+  if(flip){ctx.scale(-1,1); ctx.translate(-W,0);}
+  const px=flip?W-x:x;
+
+  // legs
+  ctx.fillStyle='#201838';
+  ctx.fillRect(px-9,y+18,8,20+ls); ctx.fillRect(px+2,y+18,8,20-ls);
+  ctx.fillStyle='#ff6eb4';
+  ctx.fillRect(px-11,y+38+ls,11,5); ctx.fillRect(px+1,y+38-ls,11,5);
+
+  // body (kimono)
+  ctx.fillStyle='#c42c80'; ctx.fillRect(px-10,y+2,20,18);
+  ctx.fillStyle='#fff0f0';
+  ctx.beginPath(); ctx.moveTo(px-4,y+2); ctx.lineTo(px+4,y+2); ctx.lineTo(px,y+12); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#ff9922'; ctx.fillRect(px-10,y+14,20,5);
+
+  // arms
+  ctx.fillStyle='#c42c80';
+  ctx.fillRect(px-17,y+4+as,8,15); ctx.fillRect(px+9,y+4-as,8,15);
+
+  // head
+  ctx.fillStyle='#f5c5a0'; ctx.beginPath(); ctx.arc(px,y-4,12,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#1a0800';
+  ctx.beginPath(); ctx.arc(px,y-5,12,Math.PI,0); ctx.fill();
+  ctx.fillRect(px-12,y-7,24,5);
+  ctx.beginPath(); ctx.arc(px+8,y-15,5,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#ff6eb4'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(px+5,y-20); ctx.lineTo(px+13,y-10); ctx.stroke();
+
+  // face
+  ctx.fillStyle='#fff'; ctx.fillRect(px-7,y-7,5,4); ctx.fillRect(px+3,y-7,5,4);
+  ctx.fillStyle='#1a0800'; ctx.fillRect(px-6,y-7,3,4); ctx.fillRect(px+4,y-7,3,4);
+  ctx.fillStyle='#fff'; ctx.fillRect(px-5,y-7,1,2); ctx.fillRect(px+5,y-7,1,2);
+  ctx.fillStyle='rgba(255,130,160,0.35)';
+  ctx.beginPath(); ctx.ellipse(px-8,y-2,5,3,0,0,Math.PI*2); ctx.ellipse(px+8,y-2,5,3,0,0,Math.PI*2); ctx.fill();
+
+  ctx.restore();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DRAW — depth fog + vignette
+// ══════════════════════════════════════════════════════════════════════════════
+function drawFog(){
+  const fg=ctx.createLinearGradient(0,H*0.50,0,H*0.70);
+  fg.addColorStop(0,'transparent'); fg.addColorStop(1,'rgba(10,4,32,0.28)');
+  ctx.fillStyle=fg; ctx.fillRect(0,H*0.50,W,H*0.20);
+  const vg=ctx.createRadialGradient(W/2,H/2,H*0.25,W/2,H/2,W*0.75);
+  vg.addColorStop(0,'transparent'); vg.addColorStop(1,'rgba(4,0,15,0.55)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  DRAW — HUD
+// ══════════════════════════════════════════════════════════════════════════════
+function drawHUD(){
+  ctx.shadowColor='#ff6eb4'; ctx.shadowBlur=14;
+  ctx.fillStyle='#ff6eb4'; ctx.font='bold 20px Georgia';
+  ctx.fillText('夜の街',18,32);
+  ctx.shadowBlur=0;
+  ctx.fillStyle='#ff6eb455'; ctx.font='11px monospace';
+  ctx.fillText('YORU NO MACHI',18,48);
+
+  const meters=Math.abs(S.dist/60).toFixed(0);
+  ctx.shadowColor='#00e5ff'; ctx.shadowBlur=8;
+  ctx.fillStyle='#00e5ff'; ctx.font='bold 14px monospace';
+  ctx.fillText(`${meters} m walked`,18,70);
+  ctx.shadowBlur=0;
+
+  ctx.fillStyle='#ffffff22'; ctx.font='10px monospace';
+  ctx.fillText('← → MOVE  · SHIFT RUN ·  SPACE JUMP',W-295,H-12);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  UPDATE
+// ══════════════════════════════════════════════════════════════════════════════
+function update(){
+  const p=S.player;
+  const running=keys['ShiftLeft']||keys['ShiftRight'];
+  const spd=running?6.5:3.8;
+  let moving=false;
+
+  if(keys['ArrowLeft']||keys['KeyA']){ S.scrollX-=spd; p.dir=-1; moving=true; S.dist-=spd; }
+  if(keys['ArrowRight']||keys['KeyD']){ S.scrollX+=spd; p.dir= 1; moving=true; S.dist+=spd; }
+
+  p.moving=moving;
+  if(moving&&p.onGround) p.walkT++;
+
+  if((keys['Space']||keys['ArrowUp']||keys['KeyW'])&&p.onGround){ p.vy=-13; p.onGround=false; }
+  if(!p.onGround){ p.vy+=0.55; p.y+=p.vy; if(p.y>=WALK_Y){p.y=WALK_Y;p.vy=0;p.onGround=true;} }
+  else p.y=WALK_Y;
+
+  // walk NPCs in world space, wrap when off-screen
+  NPCS.forEach(n=>{
+    n.wx+=n.spd*n.dir; n.walkT++;
+    const sx=n.wx-S.scrollX;
+    if(sx>W+180) n.wx-=(W+450);
+    if(sx<-220)  n.wx+=(W+450);
+  });
+
+  // drive cars in world space, wrap when off-screen
+  CARS.forEach(c=>{
+    c.wx+=c.spd*c.dir;
+    const sx=c.wx-S.scrollX;
+    if(sx>W+170) c.wx-=(W+500);
+    if(sx<-230)  c.wx+=(W+500);
+  });
+
+  S.tick++;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════════════════════════════════════
+function render(){
+  const t=S.tick;
+  ctx.clearRect(0,0,W,H);
+
+  // Layer 0 — sky
+  drawSky(); drawStars(t); drawMoon();
+
+  // Layers 1-4 — buildings (far → near)
+  LAYERS.forEach(l=>drawLayer(l,t));
+
+  // atmosphere
+  drawFog();
+
+  // Layer 5 — power lines (behind road level)
+  drawPowerLines();
+
+  // Layer 5 — road surface
+  drawRoad();
+
+  // Layer 5 — sidewalk props
+  drawVends(t);
+
+  // NPCs behind player (left side of screen)
+  NPCS.forEach(n=>{ if(n.wx-S.scrollX<W/2) drawNPC(n); });
+
+  // Cars on road
+  CARS.forEach(c=>drawCar(c));
+
+  // Player
+  drawPlayer();
+
+  // NPCs in front of player (right side of screen)
+  NPCS.forEach(n=>{ if(n.wx-S.scrollX>=W/2) drawNPC(n); });
+
+  // Foreground — lamps, trees, petals (on top of everything)
+  drawLamps(t); drawTrees(t); drawPetals(t);
+
+  drawHUD();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  LOOP
+// ══════════════════════════════════════════════════════════════════════════════
+function loop(){ update(); render(); requestAnimationFrame(loop); }
+loop();
+</script>
 </body>
 </html>

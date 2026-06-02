@@ -1,187 +1,485 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Interactive 3D Viewer</title>
+<meta charset="UTF-8"/>
+<title>夜の街 — Yoru no Machi</title>
 <style>
-  html, body { margin: 0; height: 100%; background: #0b0d12; color: #e7e9ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; overflow: hidden; }
-  #app { position: fixed; inset: 0; }
-  #hud {
-    position: fixed; top: 14px; left: 14px; z-index: 10;
-    background: rgba(20, 22, 30, 0.7); backdrop-filter: blur(8px);
-    padding: 12px 14px; border-radius: 10px; font-size: 13px; line-height: 1.45;
-    border: 1px solid rgba(255,255,255,0.08); max-width: 280px;
-  }
-  #hud h1 { font-size: 14px; margin: 0 0 6px; font-weight: 600; }
-  #hud .row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-  #hud label { opacity: 0.8; min-width: 70px; }
-  #hud input[type=range] { flex: 1; }
-  #hud button {
-    background: #2a3142; color: #e7e9ee; border: 1px solid rgba(255,255,255,0.1);
-    padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;
-  }
-  #hud button:hover { background: #353d52; }
-  #loading {
-    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-    background: #0b0d12; z-index: 20; font-size: 14px; opacity: 0.8;
-  }
-  #loading.hidden { display: none; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#04000f;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;overflow:hidden;font-family:Georgia,serif}
+canvas{display:block;border:2px solid #ff6eb455;box-shadow:0 0 40px #9b59b640,0 0 80px #ff6eb420}
+#sub{color:#ff6eb488;font-size:12px;margin-top:8px;letter-spacing:3px;text-align:center}
 </style>
 </head>
 <body>
-  <div id="app"></div>
-  <div id="loading">Loading 3D model…</div>
-  <div id="hud">
-    <h1>Interactive 3D Model</h1>
-    <div style="opacity:0.7;font-size:12px;">Drag to rotate · Scroll to zoom · Right-drag to pan</div>
-    <div class="row"><label>Auto-rotate</label><input id="autorotate" type="checkbox" checked /></div>
-    <div class="row"><label>Speed</label><input id="speed" type="range" min="0" max="5" step="0.1" value="1" /></div>
-    <div class="row"><label>Light</label><input id="light" type="range" min="0" max="3" step="0.05" value="1.1" /></div>
-    <div class="row"><label>BG</label>
-      <select id="bg" style="flex:1;background:#2a3142;color:#e7e9ee;border:1px solid rgba(255,255,255,0.1);padding:4px;border-radius:6px;">
-        <option value="#0b0d12">Dark</option>
-        <option value="#1a1f2e">Slate</option>
-        <option value="#f3f4f6">Light</option>
-        <option value="#000000">Black</option>
-      </select>
-    </div>
-    <div class="row"><button id="reset">Reset view</button><button id="wire">Wireframe</button></div>
-  </div>
+<canvas id="c"></canvas>
+<div id="sub">← → / A D  MOVE &nbsp;·&nbsp; SPACE / W / ↑  JUMP &nbsp;·&nbsp; 夜の街</div>
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+canvas.width=900;canvas.height=500;
 
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-    }
+// ── seeded RNG ──────────────────────────────────────────────────────────────
+function rng(seed){
+  let s=seed|0;
+  return()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+}
+
+// ── world constants ──────────────────────────────────────────────────────────
+const W=canvas.width, H=canvas.height;
+const GROUND_Y = H*0.74;   // sidewalk top
+const PLAYER_Y = GROUND_Y; // feet position
+
+// ── neon palette ─────────────────────────────────────────────────────────────
+const NEONS=['#ff6eb4','#00e5ff','#ffe066','#cc44ff','#ff4466','#44ffaa'];
+
+// ── layer configs (parallax multiplier, z-depth visual scale) ────────────────
+// Layer 0 = sky/stars (drawn separately, not scrolling)
+// Layer 1 = silhouette skyline   speed 0.08
+// Layer 2 = far buildings        speed 0.18
+// Layer 3 = mid buildings        speed 0.38
+// Layer 4 = near buildings       speed 0.65
+// Layer 5 = street/foreground    speed 1.00
+
+// ── building generator ───────────────────────────────────────────────────────
+function genBuildings(count,minW,maxW,minH,maxH,seed){
+  const r=rng(seed); const list=[];
+  let x=-300;
+  for(let i=0;i<count;i++){
+    const w=minW+r()*(maxW-minW)|0;
+    const h=minH+r()*(maxH-minH)|0;
+    const neon=NEONS[Math.floor(r()*NEONS.length)];
+    const hasNeon=r()>0.45;
+    const winDens=r();
+    const tag=r();
+    list.push({x,w,h,neon,hasNeon,winDens,tag});
+    x+=w+(r()*30-5|0);
   }
-  </script>
+  return list;
+}
 
-  <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+const TILE=2400;
+const layers=[
+  {spd:0.08, blds:genBuildings(80, 40,90,  60,130, 11), gY:0.60, alpha:0.55, dark:'#100d22', side:'#0a0818'},
+  {spd:0.18, blds:genBuildings(55, 60,130, 80,190, 22), gY:0.62, alpha:0.75, dark:'#181235', side:'#0f0c28'},
+  {spd:0.38, blds:genBuildings(38, 80,160,100,240, 33), gY:0.64, alpha:0.90, dark:'#1e1545', side:'#130f30'},
+  {spd:0.65, blds:genBuildings(26,100,200,130,300, 44), gY:0.67, alpha:1.00, dark:'#120e30', side:'#0a0820'},
+];
 
-    const container = document.getElementById('app');
-    const loadingEl = document.getElementById('loading');
+// ── stars ────────────────────────────────────────────────────────────────────
+const STARS=Array.from({length:160},(_,i)=>{
+  const r2=rng(i*77+3);
+  return{x:r2()*W*3,y:r2()*H*0.52,rad:r2()*1.4+0.3,phase:r2()*Math.PI*2};
+});
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#0b0d12');
+// ── lamp posts (foreground layer) ────────────────────────────────────────────
+const LAMPS=Array.from({length:12},(_,i)=>({baseX:i*160+40}));
 
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
-    camera.position.set(2, 1.5, 3);
+// ── cherry trees (foreground) ────────────────────────────────────────────────
+const TREES=Array.from({length:8},(_,i)=>({baseX:i*220+100}));
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    container.appendChild(renderer.domElement);
+// ── petals ───────────────────────────────────────────────────────────────────
+const PETALS=Array.from({length:22},(_,i)=>{
+  const r2=rng(i*31+7);
+  return{ox:r2()*W*2,oy:r2()*H*0.8,spd:r2()*0.4+0.2,drift:r2()*1.5+0.5,phase:r2()*Math.PI*2,sz:r2()*4+2};
+});
 
-    const pmrem = new THREE.PMREMGenerator(renderer);
-    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+// ── game state ────────────────────────────────────────────────────────────────
+const keys={};
+document.addEventListener('keydown',e=>{keys[e.code]=true;  if(['Space','ArrowLeft','ArrowRight','ArrowUp'].includes(e.code))e.preventDefault();});
+document.addEventListener('keyup',  e=>{keys[e.code]=false;});
 
-    const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 0.6);
-    scene.add(hemi);
-    const dir = new THREE.DirectionalLight(0xffffff, 1.0);
-    dir.position.set(5, 8, 5);
-    scene.add(dir);
+const state={
+  scrollX:0,
+  tick:0,
+  player:{
+    x:W/2, y:PLAYER_Y,
+    vy:0, onGround:true,
+    dir:1, walkT:0, moving:false
+  }
+};
 
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 1.0;
+// ═══════════════════════════════════════════════════════════════════════════════
+//  DRAW HELPERS
+// ═══════════════════════════════════════════════════════════════════════════════
 
-    let model = null;
-    let initialCamPos = camera.position.clone();
-    let initialTarget = new THREE.Vector3(0, 0, 0);
-    let wireframeOn = false;
+function drawSky(){
+  const g=ctx.createLinearGradient(0,0,0,H*0.75);
+  g.addColorStop(0,'#04000f');
+  g.addColorStop(0.25,'#0a0020');
+  g.addColorStop(0.55,'#130838');
+  g.addColorStop(0.85,'#1e0d50');
+  g.addColorStop(1,'#2a1060');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H*0.75);
+}
 
-    const loader = new GLTFLoader();
-    loader.load(
-      'models/model.glb',
-      (gltf) => {
-        model = gltf.scene;
+function drawMoon(t){
+  const mx=W*0.78, my=H*0.14;
+  // outer glow
+  const g=ctx.createRadialGradient(mx,my,8,mx,my,70);
+  g.addColorStop(0,'#ffffff28'); g.addColorStop(0.4,'#fffbe012'); g.addColorStop(1,'transparent');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(mx,my,70,0,Math.PI*2); ctx.fill();
+  // body
+  ctx.fillStyle='#fff6e0'; ctx.beginPath(); ctx.arc(mx,my,24,0,Math.PI*2); ctx.fill();
+  // crescent shadow
+  ctx.fillStyle='#080018'; ctx.beginPath(); ctx.arc(mx+10,my-4,20,0,Math.PI*2); ctx.fill();
+}
 
-        const box = new THREE.Box3().setFromObject(model);
-        const size = box.getSize(new THREE.Vector3()).length();
-        const center = box.getCenter(new THREE.Vector3());
+function drawStars(t){
+  STARS.forEach(s=>{
+    const alpha=0.4+0.55*Math.abs(Math.sin(s.phase+t*0.0018));
+    const sx=((s.x - state.scrollX*0.02)%(W*3)+W*3)%(W*3);
+    if(sx<0||sx>W) return;
+    ctx.fillStyle=`rgba(255,255,255,${alpha})`;
+    ctx.beginPath(); ctx.arc(sx*(W/(W*3))*3,s.y,s.rad,0,Math.PI*2); ctx.fill();
+  });
+}
 
-        model.position.sub(center);
-        scene.add(model);
+// draw one tiled layer of buildings
+function drawLayer(layer, t){
+  const groundY=H*layer.gY;
+  const off=(-state.scrollX*layer.spd%TILE+TILE)%TILE;
 
-        const dist = size * 1.2;
-        camera.position.set(dist, dist * 0.6, dist);
-        camera.near = size / 100;
-        camera.far = size * 100;
-        camera.updateProjectionMatrix();
+  layer.blds.forEach(b=>{
+    // tile across screen
+    for(let tile=-TILE;tile<=TILE+W;tile+=TILE){
+      const bx=b.x+off+tile;
+      if(bx+b.w<-60||bx>W+60) continue;
+      const by=groundY-b.h;
 
-        controls.target.set(0, 0, 0);
-        controls.maxDistance = size * 5;
-        controls.minDistance = size * 0.1;
-        controls.update();
+      ctx.globalAlpha=layer.alpha;
 
-        initialCamPos = camera.position.clone();
-        initialTarget = controls.target.clone();
+      // ── front face ──
+      const fg=ctx.createLinearGradient(bx,by,bx+b.w,groundY);
+      fg.addColorStop(0,layer.dark); fg.addColorStop(1,shiftBright(layer.dark,15));
+      ctx.fillStyle=fg;
+      ctx.fillRect(bx,by,b.w,b.h);
 
-        loadingEl.classList.add('hidden');
-      },
-      (xhr) => {
-        if (xhr.total) {
-          const pct = Math.round((xhr.loaded / xhr.total) * 100);
-          loadingEl.textContent = `Loading 3D model… ${pct}%`;
+      // ── side face (3-D illusion) ──
+      const sw=Math.min(14,b.w*0.12)|0;
+      ctx.fillStyle=layer.side;
+      ctx.beginPath();
+      ctx.moveTo(bx+b.w,by); ctx.lineTo(bx+b.w+sw,by+sw*0.6);
+      ctx.lineTo(bx+b.w+sw,groundY+sw*0.6); ctx.lineTo(bx+b.w,groundY);
+      ctx.closePath(); ctx.fill();
+
+      // ── top face ──
+      ctx.fillStyle=shiftBright(layer.dark,25);
+      ctx.beginPath();
+      ctx.moveTo(bx,by); ctx.lineTo(bx+b.w,by);
+      ctx.lineTo(bx+b.w+sw,by+sw*0.6); ctx.lineTo(bx+sw,by+sw*0.6);
+      ctx.closePath(); ctx.fill();
+
+      // ── windows ──
+      const wCols=Math.max(1,b.w/22|0);
+      const wRows=Math.max(2,b.h/28|0);
+      const litColor=b.hasNeon?b.neon:'#ffee88';
+      for(let r=0;r<wRows;r++){
+        for(let c=0;c<wCols;c++){
+          const lit=((r*7+c*5+b.tag*31|0)%5)!==0;
+          if(!lit) continue;
+          // subtle flicker on neon windows
+          const flk=b.hasNeon&&((t*0.05+b.tag*17+r+c)%60<1)?0.2:1;
+          ctx.fillStyle=hexAlpha(litColor,Math.floor(180*flk));
+          ctx.fillRect(bx+6+c*19, by+10+r*25, 10,15);
+          // glow
+          ctx.fillStyle=hexAlpha(litColor,30);
+          ctx.fillRect(bx+3+c*19, by+7+r*25, 16,21);
         }
-      },
-      (err) => {
-        loadingEl.textContent = 'Failed to load model.';
-        console.error(err);
       }
-    );
 
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+      // ── neon sign ──
+      if(b.hasNeon && b.w>80){
+        const flk=Math.sin(t*0.004*((b.tag%3)+1)+b.tag*5)>0.85?0.25:1;
+        ctx.shadowColor=b.neon; ctx.shadowBlur=12*flk;
+        ctx.strokeStyle=hexAlpha(b.neon,Math.floor(220*flk));
+        ctx.lineWidth=2.5;
+        const sy=by+b.h*0.35;
+        ctx.strokeRect(bx+8,sy,b.w-16,22);
+        ctx.beginPath();
+        for(let n=0;n<3;n++){ctx.moveTo(bx+16+n*20,sy+6);ctx.lineTo(bx+26+n*20,sy+6);ctx.moveTo(bx+16+n*20,sy+14);ctx.lineTo(bx+26+n*20,sy+14);}
+        ctx.stroke();
+        ctx.shadowBlur=0;
+      }
 
-    document.getElementById('autorotate').addEventListener('change', (e) => {
-      controls.autoRotate = e.target.checked;
-    });
-    document.getElementById('speed').addEventListener('input', (e) => {
-      controls.autoRotateSpeed = parseFloat(e.target.value);
-    });
-    document.getElementById('light').addEventListener('input', (e) => {
-      renderer.toneMappingExposure = parseFloat(e.target.value);
-    });
-    document.getElementById('bg').addEventListener('change', (e) => {
-      scene.background = new THREE.Color(e.target.value);
-    });
-    document.getElementById('reset').addEventListener('click', () => {
-      camera.position.copy(initialCamPos);
-      controls.target.copy(initialTarget);
-      controls.update();
-    });
-    document.getElementById('wire').addEventListener('click', () => {
-      if (!model) return;
-      wireframeOn = !wireframeOn;
-      model.traverse((o) => {
-        if (o.isMesh && o.material) {
-          const mats = Array.isArray(o.material) ? o.material : [o.material];
-          mats.forEach((m) => { m.wireframe = wireframeOn; });
-        }
-      });
-    });
-
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
+      ctx.globalAlpha=1;
     }
-    animate();
-  </script>
+  });
+}
+
+function drawRoad(){
+  // sidewalk strip
+  ctx.fillStyle='#22203a';
+  ctx.fillRect(0,GROUND_Y-22,W,22);
+  ctx.fillStyle='#2e2c48';
+  ctx.fillRect(0,GROUND_Y-24,W,3);
+  ctx.fillStyle='#0e0d1c';
+  ctx.fillRect(0,GROUND_Y-2,W,3);
+
+  // road body with perspective gradient
+  const rg=ctx.createLinearGradient(0,GROUND_Y,0,H);
+  rg.addColorStop(0,'#18182e'); rg.addColorStop(1,'#0a0a1a');
+  ctx.fillStyle=rg; ctx.fillRect(0,GROUND_Y,W,H-GROUND_Y);
+
+  // dashed centre line (scrolls at speed 1)
+  const dashOff=(-state.scrollX*1.0%80+80)%80;
+  ctx.save();
+  ctx.strokeStyle='#ffff5566'; ctx.lineWidth=2.5;
+  ctx.setLineDash([38,38]); ctx.lineDashOffset=-dashOff;
+  ctx.beginPath(); ctx.moveTo(0,GROUND_Y+(H-GROUND_Y)*0.4); ctx.lineTo(W,GROUND_Y+(H-GROUND_Y)*0.4);
+  ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+
+  // edge lane marking
+  ctx.strokeStyle='#ffffff22'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(0,GROUND_Y+(H-GROUND_Y)*0.12); ctx.lineTo(W,GROUND_Y+(H-GROUND_Y)*0.12); ctx.stroke();
+
+  // puddle shimmer
+  for(let i=0;i<5;i++){
+    const px=((i*200-state.scrollX*0.85)%(W+300)+W+300)%(W+300)-150;
+    ctx.fillStyle='rgba(100,100,200,0.07)';
+    ctx.beginPath(); ctx.ellipse(px,GROUND_Y+(H-GROUND_Y)*0.65,45+i*8,5,0,0,Math.PI*2); ctx.fill();
+  }
+}
+
+function drawLamps(t){
+  LAMPS.forEach(l=>{
+    const lx=((l.baseX - state.scrollX*1.0)%(W+200)+W+200)%(W+200)-100;
+    if(lx<-60||lx>W+60) return;
+    const ly=GROUND_Y;
+    // post
+    ctx.strokeStyle='#383858'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(lx,ly-18); ctx.lineTo(lx,ly-95); ctx.lineTo(lx+22,ly-112); ctx.stroke();
+    // glow
+    const pulse=1+0.04*Math.sin(t*0.002+l.baseX);
+    const gg=ctx.createRadialGradient(lx+22,ly-115,0,lx+22,ly-115,55*pulse);
+    gg.addColorStop(0,'#ffcc6650'); gg.addColorStop(0.35,'#ff990022'); gg.addColorStop(1,'transparent');
+    ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(lx+22,ly-115,55*pulse,0,Math.PI*2); ctx.fill();
+    // bulb
+    ctx.fillStyle='#ffffcc'; ctx.beginPath(); ctx.arc(lx+22,ly-115,6,0,Math.PI*2); ctx.fill();
+    // lantern body
+    ctx.fillStyle='#cc5500aa'; ctx.fillRect(lx+14,ly-121,16,12);
+    ctx.strokeStyle='#ff8833'; ctx.lineWidth=1; ctx.strokeRect(lx+14,ly-121,16,12);
+  });
+}
+
+function drawTrees(t){
+  TREES.forEach(tr=>{
+    const tx=((tr.baseX - state.scrollX*0.92)%(W+300)+W+300)%(W+300)-150;
+    if(tx<-100||tx>W+100) return;
+    const ty=GROUND_Y;
+    // trunk
+    ctx.strokeStyle='#2d1a0a'; ctx.lineWidth=6;
+    ctx.beginPath(); ctx.moveTo(tx,ty-18); ctx.lineTo(tx,ty-82); ctx.stroke();
+    ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(tx,ty-68); ctx.lineTo(tx-28,ty-105); ctx.moveTo(tx,ty-68); ctx.lineTo(tx+22,ty-100); ctx.stroke();
+    // blossom clusters
+    for(let b=0;b<16;b++){
+      const ang=(b/16)*Math.PI*2+Math.sin(t*0.0015+tr.baseX*0.01)*0.15;
+      const rad=28+Math.sin(b*2.3)*10;
+      const bx=tx+Math.cos(ang)*rad;
+      const by=ty-92+Math.sin(ang)*rad*0.55;
+      ctx.fillStyle='#ffb7d5bb';
+      ctx.beginPath(); ctx.arc(bx,by,7+Math.sin(b*1.9)*3.5,0,Math.PI*2); ctx.fill();
+    }
+  });
+}
+
+function drawPetals(t){
+  PETALS.forEach(p=>{
+    const age=(t*p.spd+p.phase*60)%700;
+    const px=((p.ox+Math.sin(p.phase+t*0.001)*80 - state.scrollX*0.25)%W+W)%W;
+    const py=(age+p.oy*0.1)%(H+30)-20;
+    const alpha=0.3+0.55*Math.abs(Math.sin(p.phase+t*0.002));
+    ctx.save();
+    ctx.translate(px,py);
+    ctx.rotate(t*0.003*p.drift+p.phase);
+    ctx.fillStyle=`rgba(255,185,210,${alpha})`;
+    ctx.beginPath(); ctx.ellipse(0,0,p.sz,p.sz*0.45,0,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  });
+}
+
+function drawDepthFog(){
+  // mid-depth atmospheric haze
+  const fg=ctx.createLinearGradient(0,H*0.50,0,H*0.70);
+  fg.addColorStop(0,'transparent'); fg.addColorStop(1,'rgba(10,4,32,0.28)');
+  ctx.fillStyle=fg; ctx.fillRect(0,H*0.50,W,H*0.20);
+  // vignette
+  const vg=ctx.createRadialGradient(W/2,H/2,H*0.25,W/2,H/2,W*0.75);
+  vg.addColorStop(0,'transparent'); vg.addColorStop(1,'rgba(4,0,15,0.55)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+}
+
+// ── player ───────────────────────────────────────────────────────────────────
+function drawPlayer(t){
+  const p=state.player;
+  const x=p.x|0, y=(p.y)|0;
+
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.25)';
+  ctx.beginPath(); ctx.ellipse(x,GROUND_Y+1,15,4,0,0,Math.PI*2); ctx.fill();
+
+  ctx.save();
+  if(p.dir<0){ctx.scale(-1,1); ctx.translate(-W,0);}
+  const px=p.dir<0 ? W-x : x;
+
+  const wt=p.moving&&p.onGround ? p.walkT : 0;
+  const legSwing=Math.sin(wt*0.22)*7;
+  const armSwing=Math.sin(wt*0.22)*6;
+
+  // ── legs ──
+  ctx.fillStyle='#201838';
+  // left
+  ctx.fillRect(px-9, y+18, 8, 20+legSwing);
+  // right
+  ctx.fillRect(px+2,  y+18, 8, 20-legSwing);
+  // shoes
+  ctx.fillStyle='#ff6eb4';
+  ctx.fillRect(px-11,y+38+legSwing,11,5);
+  ctx.fillRect(px+1, y+38-legSwing,11,5);
+
+  // ── body (kimono) ──
+  ctx.fillStyle='#c42c80';
+  ctx.fillRect(px-10,y+2,20,18);
+
+  // collar
+  ctx.fillStyle='#fff0f0';
+  ctx.beginPath(); ctx.moveTo(px-4,y+2); ctx.lineTo(px+4,y+2); ctx.lineTo(px,y+12); ctx.closePath(); ctx.fill();
+
+  // obi sash
+  ctx.fillStyle='#ff9922';
+  ctx.fillRect(px-10,y+14,20,5);
+
+  // ── arms ──
+  ctx.fillStyle='#c42c80';
+  ctx.fillRect(px-17,y+4+armSwing,8,15);
+  ctx.fillRect(px+9, y+4-armSwing,8,15);
+
+  // ── head ──
+  ctx.fillStyle='#f5c5a0';
+  ctx.beginPath(); ctx.arc(px,y-4,12,0,Math.PI*2); ctx.fill();
+
+  // hair
+  ctx.fillStyle='#1a0800';
+  ctx.beginPath(); ctx.arc(px,y-5,12,Math.PI,0); ctx.fill();
+  ctx.fillRect(px-12,y-7,24,5);
+  // bun
+  ctx.beginPath(); ctx.arc(px+8,y-15,5,0,Math.PI*2); ctx.fill();
+  // hair pin
+  ctx.strokeStyle='#ff6eb4'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(px+5,y-20); ctx.lineTo(px+13,y-10); ctx.stroke();
+
+  // ── face ──
+  // eyes
+  ctx.fillStyle='#fff'; ctx.fillRect(px-7,y-7,5,4); ctx.fillRect(px+3,y-7,5,4);
+  ctx.fillStyle='#1a0800'; ctx.fillRect(px-6,y-7,3,4); ctx.fillRect(px+4,y-7,3,4);
+  // highlights
+  ctx.fillStyle='#fff'; ctx.fillRect(px-5,y-7,1,2); ctx.fillRect(px+5,y-7,1,2);
+  // blush
+  ctx.fillStyle='rgba(255,130,160,0.35)';
+  ctx.beginPath(); ctx.ellipse(px-8,y-2,5,3,0,0,Math.PI*2); ctx.ellipse(px+8,y-2,5,3,0,0,Math.PI*2); ctx.fill();
+
+  ctx.restore();
+}
+
+function drawHUD(){
+  // title
+  ctx.shadowColor='#ff6eb4'; ctx.shadowBlur=14;
+  ctx.fillStyle='#ff6eb4'; ctx.font='bold 20px Georgia';
+  ctx.fillText('夜の街',18,32);
+  ctx.shadowBlur=0;
+  ctx.fillStyle='#ff6eb455'; ctx.font='11px monospace';
+  ctx.fillText('YORU NO MACHI',18,48);
+
+  // layer label
+  ctx.fillStyle='#ffffff28'; ctx.font='10px monospace';
+  ctx.fillText('5-LAYER PARALLAX CITY  |  ← → MOVE  SPACE JUMP',W-350,H-12);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  UPDATE
+// ═══════════════════════════════════════════════════════════════════════════════
+function update(){
+  const p=state.player;
+  const spd=3.8;
+  let moving=false;
+
+  if(keys['ArrowLeft']||keys['KeyA']){ state.scrollX-=spd; p.dir=-1; moving=true; }
+  if(keys['ArrowRight']||keys['KeyD']){ state.scrollX+=spd; p.dir=1;  moving=true; }
+
+  p.moving=moving;
+  if(moving&&p.onGround) p.walkT++;
+
+  // jump
+  if((keys['Space']||keys['ArrowUp']||keys['KeyW'])&&p.onGround){
+    p.vy=-13; p.onGround=false;
+  }
+
+  // gravity
+  if(!p.onGround){
+    p.vy+=0.55; p.y+=p.vy;
+    if(p.y>=PLAYER_Y){ p.y=PLAYER_Y; p.vy=0; p.onGround=true; }
+  } else {
+    p.y=PLAYER_Y;
+  }
+
+  state.tick++;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════════════════════════════
+function render(){
+  const t=state.tick;
+  ctx.clearRect(0,0,W,H);
+
+  // layer 0 — sky
+  drawSky();
+  drawStars(t);
+  drawMoon(t);
+
+  // layer 1-4 — buildings (far → near)
+  layers.forEach(l=>drawLayer(l,t));
+
+  // depth atmosphere
+  drawDepthFog();
+
+  // layer 5 — road
+  drawRoad();
+
+  // player (on road, above foreground props)
+  drawPlayer(t);
+
+  // foreground props
+  drawLamps(t);
+  drawTrees(t);
+  drawPetals(t);
+
+  // UI
+  drawHUD();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════════════════════════
+function hexAlpha(hex,a){
+  // hex = '#rrggbb', a = 0-255
+  return hex+Math.max(0,Math.min(255,a)).toString(16).padStart(2,'0');
+}
+function shiftBright(hex,amt){
+  let r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  r=Math.min(255,r+amt);g=Math.min(255,g+amt);b=Math.min(255,b+amt);
+  return`#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  LOOP
+// ═══════════════════════════════════════════════════════════════════════════════
+function loop(){
+  update();
+  render();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
 </body>
 </html>

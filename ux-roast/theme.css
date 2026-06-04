@@ -1,0 +1,87 @@
+/* UX Roast — shared design tokens.
+ * Linear's restraint, Notion's calm typography, Apple's soft depth. */
+:root {
+  --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --bg: #ffffff;
+  --bg-subtle: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #fbfbfc;
+  --ink: #1a1a1e;
+  --ink-soft: #3c3c43;
+  --muted: #8a8a8f;
+  --border: #ececef;
+  --border-strong: #e0e0e4;
+
+  --accent: #6366f1;
+  --accent-2: #8b5cf6;
+  --accent-grad: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --accent-soft: #eef0ff;
+
+  --good: #16a34a;
+  --good-soft: #e9f7ef;
+  --warn: #d97706;
+  --warn-soft: #fdf3e7;
+  --bad: #dc2626;
+  --bad-soft: #fdecec;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow-sm: 0 1px 2px rgba(17, 17, 26, 0.05), 0 0 1px rgba(17, 17, 26, 0.08);
+  --shadow: 0 4px 16px rgba(17, 17, 26, 0.06), 0 1px 2px rgba(17, 17, 26, 0.04);
+  --shadow-lg: 0 12px 40px rgba(17, 17, 26, 0.10);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d0d10;
+    --bg-subtle: #131318;
+    --surface: #16161b;
+    --surface-2: #1b1b21;
+    --ink: #f2f2f5;
+    --ink-soft: #c9c9d1;
+    --muted: #8d8d97;
+    --border: #26262e;
+    --border-strong: #32323c;
+    --accent-soft: #1e1e3a;
+    --good-soft: #11271b;
+    --warn-soft: #2a2010;
+    --bad-soft: #2a1414;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.55);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.sev-high { color: var(--bad); }
+.sev-medium { color: var(--warn); }
+.sev-low { color: var(--muted); }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  line-height: 1;
+}
+.pill.high { color: var(--bad); background: var(--bad-soft); }
+.pill.medium { color: var(--warn); background: var(--warn-soft); }
+.pill.low { color: var(--muted); background: var(--bg-subtle); }
+
+.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UX Roast</title>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <img src="icons/icon-32.png" width="22" height="22" alt="" />
+        <span class="brand-name">UX&nbsp;Roast</span>
+      </div>
+      <span class="brand-tag">UX audit, instantly</span>
+    </header>
+
+    <!-- IDLE -->
+    <section id="view-idle" class="view">
+      <div class="hero">
+        <div class="hero-glow"></div>
+        <h1 class="hero-title">Roast this page</h1>
+        <p class="hero-sub">Capture the current tab and audit layout, accessibility,
+          CTA hierarchy and contrast — scored out of 100.</p>
+        <p id="target" class="target"></p>
+      </div>
+      <button id="run" class="btn btn-primary btn-block">
+        <span class="btn-spark"></span> Roast this page
+      </button>
+      <p id="idle-note" class="note"></p>
+    </section>
+
+    <!-- LOADING -->
+    <section id="view-loading" class="view hidden">
+      <div class="loader">
+        <div class="loader-ring"></div>
+        <p id="loading-step" class="loader-text">Capturing page…</p>
+      </div>
+    </section>
+
+    <!-- RESULT -->
+    <section id="view-result" class="view hidden">
+      <div class="score-card">
+        <div class="gauge" id="gauge">
+          <svg viewBox="0 0 120 120" class="gauge-svg">
+            <circle class="gauge-track" cx="60" cy="60" r="52" />
+            <circle class="gauge-fill" id="gauge-fill" cx="60" cy="60" r="52" />
+          </svg>
+          <div class="gauge-center">
+            <span class="gauge-score" id="score">–</span>
+            <span class="gauge-grade" id="grade"></span>
+          </div>
+        </div>
+        <div class="score-meta">
+          <p class="verdict" id="verdict"></p>
+          <div class="count-row" id="counts"></div>
+        </div>
+      </div>
+
+      <div class="cat-list" id="cats"></div>
+
+      <div class="top-issues">
+        <div class="section-head">
+          <span>Top fixes</span>
+        </div>
+        <ul class="issue-list" id="top-issues"></ul>
+      </div>
+
+      <div class="actions">
+        <button id="open-report" class="btn btn-primary btn-block">Open full report</button>
+        <button id="rerun" class="btn btn-ghost btn-block">Re-roast</button>
+      </div>
+    </section>
+
+    <!-- ERROR -->
+    <section id="view-error" class="view hidden">
+      <div class="error-box">
+        <div class="error-icon">⚠️</div>
+        <p id="error-msg" class="error-msg"></p>
+        <button id="error-back" class="btn btn-ghost btn-block">Back</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="browser-api.js"></script>
+  <script src="analyzer.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

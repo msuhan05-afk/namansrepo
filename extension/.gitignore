@@ -1,8 +1,9 @@
 node_modules/
 dist/
-dist-chrome/
-dist-firefox/
 artifacts/
-public/icons/*.png
 *.log
 .DS_Store
+
+# Built, ready-to-load extension packages (dist-chrome/, dist-firefox/) and the
+# generated icons are committed so the extension can be loaded locally without
+# running a build. Re-generate them with `npm run build`.

@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, "claude/focused-tesla-Z0bM7"]
+    branches: [main, "claude/loving-volta-pl1Jv"]
   workflow_dispatch:
 
 permissions:

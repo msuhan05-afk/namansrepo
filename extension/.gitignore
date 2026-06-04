@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-chrome/
+dist-firefox/
+artifacts/
+public/icons/*.png
+*.log
+.DS_Store

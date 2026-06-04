@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebDock</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!--
+      `type="module"` lets Vite treat this as the bundle entry. Our post-build
+      plugin (see vite.config.ts) rewrites the emitted tag to a classic script
+      so the IIFE bundle loads in UXP, which doesn't require ESM.
+    -->
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>

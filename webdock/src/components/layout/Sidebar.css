@@ -1,0 +1,153 @@
+.wd-sidebar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--wd-space-2);
+  height: 100%;
+  width: var(--wd-sidebar-w);
+  padding: var(--wd-space-3) 0;
+  border-right: 1px solid var(--wd-border);
+  overflow: visible;
+  z-index: 5;
+}
+
+.wd-sidebar__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--wd-space-2);
+  flex: none;
+}
+
+.wd-sidebar__brand-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, var(--wd-accent), #9b6bff);
+  box-shadow: 0 0 16px rgba(91, 140, 255, 0.6);
+}
+
+.wd-sidebar__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--wd-space-1);
+  width: 100%;
+  align-items: center;
+  overflow-y: auto;
+  overflow-x: visible;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.wd-sidebar__list::-webkit-scrollbar {
+  width: 0;
+}
+
+.wd-sidebar__footer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-top: var(--wd-space-2);
+  border-top: 1px solid var(--wd-border);
+  flex: none;
+}
+
+.wd-sidebar__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border: none;
+  background: transparent;
+  border-radius: var(--wd-radius-md);
+  color: var(--wd-text-secondary);
+  transition:
+    background var(--wd-dur) var(--wd-ease),
+    color var(--wd-dur) var(--wd-ease),
+    transform var(--wd-dur) var(--wd-ease);
+}
+
+.wd-sidebar__item:hover {
+  background: var(--wd-surface-hover);
+  color: var(--wd-text);
+}
+
+.wd-sidebar__item:active {
+  transform: scale(0.9);
+}
+
+.wd-sidebar__item.is-active {
+  color: #fff;
+  background: color-mix(in srgb, var(--item-accent) 22%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--item-accent) 40%, transparent),
+    0 0 22px color-mix(in srgb, var(--item-accent) 28%, transparent);
+}
+
+.wd-sidebar__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--wd-dur) var(--wd-ease);
+}
+
+.wd-sidebar__item.is-active .wd-sidebar__icon {
+  transform: scale(1.06);
+}
+
+/* Animated accent pill that grows when active. */
+.wd-sidebar__pill {
+  position: absolute;
+  left: -7px;
+  top: 50%;
+  width: 3px;
+  height: 8px;
+  border-radius: var(--wd-radius-pill);
+  background: var(--item-accent);
+  opacity: 0;
+  transform: translateY(-50%) scaleY(0.4);
+  transition:
+    opacity var(--wd-dur) var(--wd-ease),
+    transform var(--wd-dur-slow) var(--wd-ease);
+}
+
+.wd-sidebar__item.is-active .wd-sidebar__pill {
+  opacity: 1;
+  height: 22px;
+  transform: translateY(-50%) scaleY(1);
+}
+
+/* Floating hover label, Raycast-style. */
+.wd-sidebar__label {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  white-space: nowrap;
+  background: var(--wd-bg-elevated);
+  color: var(--wd-text);
+  border: 1px solid var(--wd-border-strong);
+  padding: var(--wd-space-1) var(--wd-space-3);
+  border-radius: var(--wd-radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: var(--wd-shadow-md);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 50;
+  transition:
+    opacity var(--wd-dur-fast) var(--wd-ease),
+    transform var(--wd-dur-fast) var(--wd-ease);
+}
+
+.wd-sidebar__item:hover .wd-sidebar__label {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}

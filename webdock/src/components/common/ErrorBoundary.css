@@ -1,0 +1,44 @@
+.wd-errorboundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  padding: var(--wd-space-6);
+}
+
+.wd-errorboundary__card {
+  max-width: 360px;
+  text-align: center;
+  padding: var(--wd-space-6);
+  border-radius: var(--wd-radius-lg);
+  box-shadow: var(--wd-shadow-md);
+  animation: wd-fade-in var(--wd-dur) var(--wd-ease-out);
+}
+
+.wd-errorboundary__card h2 {
+  margin: 0 0 var(--wd-space-2);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.wd-errorboundary__card p {
+  margin: 0 0 var(--wd-space-4);
+  color: var(--wd-text-secondary);
+  font-size: 13px;
+  word-break: break-word;
+}
+
+.wd-errorboundary__btn {
+  border: 1px solid var(--wd-border-strong);
+  background: var(--wd-surface-hover);
+  color: var(--wd-text);
+  padding: var(--wd-space-2) var(--wd-space-5);
+  border-radius: var(--wd-radius-pill);
+  font-size: 13px;
+  transition: background var(--wd-dur-fast) var(--wd-ease);
+}
+
+.wd-errorboundary__btn:hover {
+  background: var(--wd-surface-active);
+}

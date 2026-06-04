@@ -1,0 +1,84 @@
+/*
+ * WebDock design tokens.
+ *
+ * Dark-mode-first palette inspired by Arc / Linear / Raycast. All component CSS
+ * references these variables so theming stays centralized. Spacing follows a
+ * 4px base scale; radii and shadows are tuned for a soft, premium feel.
+ */
+
+:root {
+  /* ---- Surfaces ---- */
+  --wd-bg: #0a0a0c;
+  --wd-bg-elevated: #131316;
+  --wd-bg-sidebar: rgba(18, 18, 22, 0.72);
+  --wd-bg-toolbar: rgba(20, 20, 26, 0.66);
+  --wd-surface: #16161b;
+  --wd-surface-hover: #1d1d24;
+  --wd-surface-active: #24242d;
+
+  /* ---- Glass ---- */
+  --wd-glass-bg: rgba(28, 28, 34, 0.55);
+  --wd-glass-border: rgba(255, 255, 255, 0.08);
+  --wd-glass-blur: 22px;
+
+  /* ---- Text ---- */
+  --wd-text: #f5f5f7;
+  --wd-text-secondary: rgba(235, 235, 245, 0.62);
+  --wd-text-tertiary: rgba(235, 235, 245, 0.34);
+
+  /* ---- Lines & strokes ---- */
+  --wd-border: rgba(255, 255, 255, 0.07);
+  --wd-border-strong: rgba(255, 255, 255, 0.14);
+
+  /* ---- Accent ---- */
+  --wd-accent: #5b8cff;
+  --wd-accent-soft: rgba(91, 140, 255, 0.16);
+  --wd-danger: #ff5a5f;
+
+  /* ---- Spacing (4px scale) ---- */
+  --wd-space-1: 4px;
+  --wd-space-2: 8px;
+  --wd-space-3: 12px;
+  --wd-space-4: 16px;
+  --wd-space-5: 20px;
+  --wd-space-6: 24px;
+  --wd-space-8: 32px;
+
+  /* ---- Radii ---- */
+  --wd-radius-sm: 8px;
+  --wd-radius-md: 12px;
+  --wd-radius-lg: 16px;
+  --wd-radius-xl: 22px;
+  --wd-radius-pill: 999px;
+
+  /* ---- Shadows ---- */
+  --wd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --wd-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --wd-shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.55);
+
+  /* ---- Motion ---- */
+  --wd-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --wd-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --wd-dur-fast: 120ms;
+  --wd-dur: 200ms;
+  --wd-dur-slow: 360ms;
+
+  /* ---- Typography ---- */
+  --wd-font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI',
+    Roboto, Helvetica, Arial, sans-serif;
+  --wd-font-mono: 'SF Mono', ui-monospace, 'JetBrains Mono', Menlo, monospace;
+
+  /* ---- Layout ---- */
+  --wd-sidebar-w: 76px;
+  --wd-toolbar-h: 52px;
+  --wd-searchbar-h: 56px;
+}
+
+/* Respect editors who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --wd-dur-fast: 0ms;
+    --wd-dur: 0ms;
+    --wd-dur-slow: 0ms;
+  }
+}

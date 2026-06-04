@@ -1,0 +1,42 @@
+.wd-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: var(--wd-radius-sm);
+  background: transparent;
+  color: var(--wd-text-secondary);
+  transition:
+    background var(--wd-dur-fast) var(--wd-ease),
+    color var(--wd-dur-fast) var(--wd-ease),
+    transform var(--wd-dur-fast) var(--wd-ease);
+}
+
+.wd-icon-btn:hover:not(:disabled) {
+  background: var(--wd-surface-hover);
+  color: var(--wd-text);
+}
+
+.wd-icon-btn:active:not(:disabled) {
+  transform: scale(0.92);
+  background: var(--wd-surface-active);
+}
+
+.wd-icon-btn:disabled {
+  opacity: 0.32;
+  cursor: default;
+}
+
+.wd-icon-btn--solid {
+  background: var(--wd-accent);
+  color: #fff;
+}
+
+.wd-icon-btn--solid:hover:not(:disabled) {
+  background: var(--wd-accent);
+  filter: brightness(1.08);
+  color: #fff;
+}

@@ -1,0 +1,68 @@
+{
+  "manifestVersion": 5,
+  "id": "com.webdock.premiere",
+  "name": "WebDock",
+  "version": "1.0.0",
+  "main": "index.html",
+  "host": [
+    {
+      "app": "premierepro",
+      "minVersion": "24.0.0"
+    }
+  ],
+  "entrypoints": [
+    {
+      "type": "panel",
+      "id": "webdock.panel",
+      "label": {
+        "default": "WebDock"
+      },
+      "minimumSize": { "width": 360, "height": 320 },
+      "maximumSize": { "width": 4000, "height": 4000 },
+      "preferredDockedSize": { "width": 920, "height": 640 },
+      "preferredFloatingSize": { "width": 1080, "height": 720 },
+      "icons": [
+        {
+          "width": 23,
+          "height": 23,
+          "path": "icons/dark.png",
+          "scale": [1, 2],
+          "theme": ["darkest", "dark"]
+        },
+        {
+          "width": 23,
+          "height": 23,
+          "path": "icons/light.png",
+          "scale": [1, 2],
+          "theme": ["lightest", "light"]
+        }
+      ]
+    }
+  ],
+  "requiredPermissions": {
+    "launchProcess": {
+      "schemes": ["https", "http"],
+      "extensions": [""]
+    },
+    "network": {
+      "domains": "all"
+    },
+    "webview": {
+      "allow": "yes",
+      "domains": "all",
+      "enableMessageBridge": "localAndRemote"
+    },
+    "localFileSystem": "request",
+    "clipboard": "readAndWrite"
+  },
+  "icons": [
+    {
+      "width": 48,
+      "height": 48,
+      "path": "icons/plugin.png",
+      "scale": [1, 2],
+      "theme": ["darkest", "dark", "lightest", "light"],
+      "species": ["pluginList"]
+    }
+  ]
+}

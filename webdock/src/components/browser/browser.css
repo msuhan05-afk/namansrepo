@@ -1,0 +1,165 @@
+.wd-browser {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ---- Toolbar ---- */
+.wd-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--wd-space-1);
+  height: var(--wd-toolbar-h);
+  padding: 0 var(--wd-space-3);
+  border-bottom: 1px solid var(--wd-border);
+  flex: none;
+}
+
+.wd-toolbar__group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.wd-toolbar__spacer {
+  flex: 1 1 auto;
+}
+
+/* ---- Web stage ---- */
+.wd-browser__stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: #fff;
+}
+
+.wd-webview {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  background: #fff;
+}
+
+/* ---- Loading bar ---- */
+.wd-loadingbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  overflow: hidden;
+  z-index: 10;
+  background: transparent;
+}
+
+.wd-loadingbar__indeterminate {
+  display: block;
+  height: 100%;
+  width: 40%;
+  border-radius: var(--wd-radius-pill);
+  background: linear-gradient(90deg, transparent, var(--wd-accent), transparent);
+  animation: wd-indeterminate 1.1s var(--wd-ease) infinite;
+}
+
+@keyframes wd-indeterminate {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+/* ---- Error state ---- */
+.wd-errorstate {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wd-bg);
+  padding: var(--wd-space-6);
+}
+
+.wd-errorstate__card {
+  max-width: 420px;
+  text-align: center;
+  animation: wd-fade-in var(--wd-dur) var(--wd-ease-out);
+}
+
+.wd-errorstate__glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--wd-space-4);
+  border-radius: var(--wd-radius-lg);
+  background: rgba(255, 90, 95, 0.12);
+  color: var(--wd-danger);
+}
+
+.wd-errorstate__card h2 {
+  margin: 0 0 var(--wd-space-2);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.wd-errorstate__card p {
+  margin: 0 0 var(--wd-space-2);
+  color: var(--wd-text-secondary);
+  font-size: 13px;
+}
+
+.wd-errorstate__url {
+  font-family: var(--wd-font-mono);
+  font-size: 12px;
+  color: var(--wd-text-tertiary);
+  word-break: break-all;
+  margin-bottom: var(--wd-space-5) !important;
+}
+
+.wd-errorstate__actions {
+  display: flex;
+  gap: var(--wd-space-2);
+  justify-content: center;
+}
+
+/* ---- Generic buttons ---- */
+.wd-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--wd-space-2);
+  border: 1px solid var(--wd-border-strong);
+  background: var(--wd-surface);
+  color: var(--wd-text);
+  padding: var(--wd-space-2) var(--wd-space-4);
+  border-radius: var(--wd-radius-pill);
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    background var(--wd-dur-fast) var(--wd-ease),
+    transform var(--wd-dur-fast) var(--wd-ease);
+}
+
+.wd-btn:hover {
+  background: var(--wd-surface-hover);
+}
+
+.wd-btn:active {
+  transform: scale(0.97);
+}
+
+.wd-btn--primary {
+  background: var(--wd-accent);
+  border-color: transparent;
+  color: #fff;
+}
+
+.wd-btn--primary:hover {
+  filter: brightness(1.08);
+  background: var(--wd-accent);
+}

@@ -1,0 +1,153 @@
+{
+  "$schema": "https://schemas.designtokens.org/0.0.1",
+  "meta": {
+    "name": "Aurora — Project Management, Reimagined",
+    "source": "https://aurora.example.com/",
+    "generator": "Design DNA",
+    "extractedAt": "2026-06-05T00:52:41.552Z"
+  },
+  "color": {
+    "primary": {
+      "value": "#334155",
+      "type": "color"
+    },
+    "secondary": {
+      "value": "#4F46E5",
+      "type": "color"
+    },
+    "accent": {
+      "value": "#C7D2FE",
+      "type": "color"
+    },
+    "background": {
+      "value": "#FFFFFF",
+      "type": "color"
+    },
+    "text": {
+      "value": "#111827",
+      "type": "color"
+    }
+  },
+  "palette": {
+    "color-01": {
+      "value": "#FFFFFF",
+      "type": "color"
+    },
+    "color-02": {
+      "value": "#334155",
+      "type": "color"
+    },
+    "color-03": {
+      "value": "#4F46E5",
+      "type": "color"
+    },
+    "color-04": {
+      "value": "#CBD5E1",
+      "type": "color"
+    },
+    "color-05": {
+      "value": "#111827",
+      "type": "color"
+    },
+    "color-06": {
+      "value": "#1E293B",
+      "type": "color"
+    },
+    "color-07": {
+      "value": "#EC4899",
+      "type": "color"
+    },
+    "color-08": {
+      "value": "#C7D2FE",
+      "type": "color"
+    },
+    "color-09": {
+      "value": "#E2E8F0",
+      "type": "color"
+    },
+    "color-10": {
+      "value": "#94A3B8",
+      "type": "color"
+    }
+  },
+  "typography": {
+    "heading": {
+      "value": {
+        "fontFamily": "Poppins",
+        "fontWeight": 700,
+        "fontSize": "34px"
+      },
+      "type": "typography"
+    }
+  },
+  "components": {
+    "button": {
+      "primary": {
+        "fill": {
+          "value": "#4F46E5",
+          "type": "color"
+        },
+        "text": {
+          "value": "#FFFFFF",
+          "type": "color"
+        },
+        "borderRadius": {
+          "value": "0px",
+          "type": "borderRadius"
+        },
+        "paddingX": {
+          "value": "24px",
+          "type": "dimension"
+        },
+        "paddingY": {
+          "value": "12px",
+          "type": "dimension"
+        }
+      },
+      "secondary": {
+        "fill": {
+          "value": "#FFFFFF",
+          "type": "color"
+        },
+        "text": {
+          "value": "#4F46E5",
+          "type": "color"
+        },
+        "borderRadius": {
+          "value": "0px",
+          "type": "borderRadius"
+        },
+        "paddingX": {
+          "value": "24px",
+          "type": "dimension"
+        },
+        "paddingY": {
+          "value": "12px",
+          "type": "dimension"
+        }
+      },
+      "tertiary": {
+        "fill": {
+          "value": "#EC4899",
+          "type": "color"
+        },
+        "text": {
+          "value": "#FFFFFF",
+          "type": "color"
+        },
+        "borderRadius": {
+          "value": "0px",
+          "type": "borderRadius"
+        },
+        "paddingX": {
+          "value": "20px",
+          "type": "dimension"
+        },
+        "paddingY": {
+          "value": "10px",
+          "type": "dimension"
+        }
+      }
+    }
+  }
+}

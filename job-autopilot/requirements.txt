@@ -1,0 +1,8 @@
+requests>=2.31
+PyYAML>=6.0
+
+# Optional: needed only when apply.enabled is true (browser form filling)
+playwright>=1.40
+
+# Optional: needed only when apply.cover_letter.mode is "claude"
+anthropic>=0.40

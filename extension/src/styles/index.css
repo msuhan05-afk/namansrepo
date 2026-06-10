@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  width: 380px;
+  min-height: 480px;
+}
+
+body {
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Slim, unobtrusive scrollbar to match the Apple-inspired aesthetic. */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 128, 0.3);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 120, 128, 0.5);
+}
+
+@layer components {
+  .dna-card {
+    @apply rounded-2xl border border-ink-200/70 bg-white/80 p-4 shadow-card backdrop-blur
+      dark:border-ink-700/60 dark:bg-ink-800/70;
+  }
+
+  .dna-btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl px-3.5 py-2 text-sm
+      font-medium transition active:scale-[0.97] disabled:opacity-50;
+  }
+
+  .dna-btn-primary {
+    @apply dna-btn bg-accent text-white hover:bg-accent-hover shadow-sm;
+  }
+
+  .dna-btn-ghost {
+    @apply dna-btn bg-ink-100 text-ink-700 hover:bg-ink-200
+      dark:bg-ink-700 dark:text-ink-100 dark:hover:bg-ink-600;
+  }
+
+  .section-title {
+    @apply mb-2 text-[11px] font-semibold uppercase tracking-wider text-ink-400;
+  }
+}

@@ -1,0 +1,66 @@
+# Copy this file to config.yaml and fill in your details.
+# Everything sensitive stays local — nothing is sent anywhere except the job
+# boards you apply to (and the Claude API if you enable claude cover letters).
+
+profile:
+  first_name: Jane
+  last_name: Doe
+  email: jane.doe@example.com
+  phone: "+1 555 000 1234"
+  location: "Remote (US)"
+  linkedin: https://linkedin.com/in/janedoe
+  github: https://github.com/janedoe
+  website: ""
+  resume_path: ./resume.pdf        # PDF strongly recommended
+
+search:
+  # A job is scored by how many keywords appear in its title/description.
+  # Title hits count double.
+  keywords:
+    - python
+    - backend
+    - django
+    - api
+  # Any of these in the title rejects the job outright.
+  exclude_keywords:
+    - staff
+    - principal
+    - intern
+  # Substring match against the job's location field ("" matches anything).
+  locations:
+    - remote
+  min_score: 2                     # minimum match score to be considered
+
+sources:
+  remoteok: true                   # https://remoteok.com public API
+  # Greenhouse board tokens (the slug in boards.greenhouse.io/<token>)
+  greenhouse_boards: []            # e.g. [gitlab, stripe]
+  # Lever company slugs (the slug in jobs.lever.co/<company>)
+  lever_companies: []              # e.g. [netflix]
+
+apply:
+  enabled: false                   # false = dry run: match + log, never submit
+  max_per_run: 5                   # hard cap on submissions per run
+  headless: true                   # set false to watch the browser work
+  screenshot_dir: ./screenshots    # filled-form screenshots for your records
+  cover_letter:
+    mode: template                 # "template" or "claude"
+    # template mode: {company}, {title}, {first_name}, {last_name} are substituted
+    template: |
+      Dear {company} hiring team,
+
+      I'm excited to apply for the {title} role. My background closely matches
+      what you're looking for, and I'd love the chance to contribute.
+
+      Best regards,
+      {first_name} {last_name}
+    # claude mode: a tailored letter is generated per job from your summary
+    # below plus the job description. Requires ANTHROPIC_API_KEY in the env.
+    candidate_summary: |
+      Backend engineer with 5 years of Python/Django experience, strong on
+      API design, PostgreSQL, and cloud infrastructure.
+
+loop:
+  interval_minutes: 240            # how often "jobpilot loop" re-runs
+
+database: ./jobpilot.db

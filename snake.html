@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snake · Nokia Style</title>
+<style>
+  :root {
+    --lcd: #9ead86;
+    --pixel: #2c3525;
+    --shell: #1c2018;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: var(--shell);
+    font-family: "Courier New", monospace;
+    color: var(--lcd);
+  }
+  .phone {
+    background: #3a4232;
+    padding: 18px;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.6), inset 0 2px 0 rgba(255,255,255,.08);
+  }
+  .lcd {
+    background: var(--lcd);
+    padding: 10px;
+    border-radius: 4px;
+    box-shadow: inset 0 0 12px rgba(0,0,0,.35);
+  }
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    color: var(--pixel);
+    font-weight: bold;
+    font-size: 14px;
+    padding: 0 2px 6px;
+    border-bottom: 2px solid var(--pixel);
+    margin-bottom: 6px;
+  }
+  canvas { display: block; image-rendering: pixelated; }
+  .hint { font-size: 12px; opacity: .7; text-align: center; line-height: 1.6; }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="lcd">
+      <div class="hud"><span id="score">0000</span><span id="hiscore">TOP 0000</span></div>
+      <canvas id="game" width="280" height="240"></canvas>
+    </div>
+  </div>
+  <div class="hint">ARROWS / WASD to move · P pause · ENTER restart<br>(swipe on mobile)</div>
+
+<script>
+(() => {
+  const CELL = 10;            // grid cell in canvas px (each cell drawn as a chunky pixel block)
+  const COLS = 28, ROWS = 24;
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const hiEl = document.getElementById('hiscore');
+  const LCD = '#9ead86', PIXEL = '#2c3525';
+
+  let snake, dir, nextDir, food, score, speed, timer, state; // state: 'play' | 'over' | 'paused'
+  let hiscore = +(localStorage.getItem('snakeHi') || 0);
+
+  function reset() {
+    snake = [{x: 8, y: 12}, {x: 7, y: 12}, {x: 6, y: 12}];
+    dir = {x: 1, y: 0};
+    nextDir = dir;
+    score = 0;
+    speed = 150;
+    placeFood();
+    state = 'play';
+    clearInterval(timer);
+    timer = setInterval(tick, speed);
+    updateHud();
+  }
+
+  function placeFood() {
+    do {
+      food = {x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS)};
+    } while (snake.some(s => s.x === food.x && s.y === food.y));
+  }
+
+  function updateHud() {
+    scoreEl.textContent = String(score).padStart(4, '0');
+    hiEl.textContent = 'TOP ' + String(hiscore).padStart(4, '0');
+  }
+
+  function tick() {
+    dir = nextDir;
+    // Nokia classic: the snake wraps around the screen edges
+    const head = {
+      x: (snake[0].x + dir.x + COLS) % COLS,
+      y: (snake[0].y + dir.y + ROWS) % ROWS
+    };
+    if (snake.some(s => s.x === head.x && s.y === head.y)) return gameOver();
+    snake.unshift(head);
+    if (head.x === food.x && head.y === food.y) {
+      score += 9;
+      if (speed > 60) { // speed up slightly with each food
+        speed -= 3;
+        clearInterval(timer);
+        timer = setInterval(tick, speed);
+      }
+      placeFood();
+      updateHud();
+    } else {
+      snake.pop();
+    }
+    draw();
+  }
+
+  function gameOver() {
+    state = 'over';
+    clearInterval(timer);
+    if (score > hiscore) {
+      hiscore = score;
+      localStorage.setItem('snakeHi', hiscore);
+      updateHud();
+    }
+    draw();
+    ctx.fillStyle = PIXEL;
+    ctx.font = 'bold 22px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 8);
+    ctx.font = 'bold 13px "Courier New", monospace';
+    ctx.fillText('PRESS ENTER', canvas.width / 2, canvas.height / 2 + 16);
+  }
+
+  // Chunky block with a 1px LCD gap, like the Nokia segments
+  function block(x, y) {
+    ctx.fillRect(x * CELL + 1, y * CELL + 1, CELL - 2, CELL - 2);
+  }
+
+  function draw() {
+    ctx.fillStyle = LCD;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = PIXEL;
+    snake.forEach(block);
+    // food drawn as a smaller "diamond" dot so it reads differently from the body
+    ctx.fillRect(food.x * CELL + 3, food.y * CELL + 1, CELL - 6, CELL - 2);
+    ctx.fillRect(food.x * CELL + 1, food.y * CELL + 3, CELL - 2, CELL - 6);
+  }
+
+  function setDir(x, y) {
+    if (state !== 'play') return;
+    if (x === -dir.x && y === -dir.y) return; // no instant reversal
+    nextDir = {x, y};
+  }
+
+  function togglePause() {
+    if (state === 'play') {
+      state = 'paused';
+      clearInterval(timer);
+      ctx.fillStyle = PIXEL;
+      ctx.font = 'bold 18px "Courier New", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+    } else if (state === 'paused') {
+      state = 'play';
+      timer = setInterval(tick, speed);
+      draw();
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    const k = e.key;
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(k)) e.preventDefault();
+    if (k === 'ArrowUp' || k === 'w' || k === 'W') setDir(0, -1);
+    else if (k === 'ArrowDown' || k === 's' || k === 'S') setDir(0, 1);
+    else if (k === 'ArrowLeft' || k === 'a' || k === 'A') setDir(-1, 0);
+    else if (k === 'ArrowRight' || k === 'd' || k === 'D') setDir(1, 0);
+    else if (k === 'p' || k === 'P') togglePause();
+    else if (k === 'Enter' && state === 'over') reset();
+  });
+
+  // Touch: swipe to steer, tap to restart after game over
+  let touchStart = null;
+  canvas.addEventListener('touchstart', e => {
+    touchStart = e.touches[0];
+    if (state === 'over') reset();
+  }, {passive: true});
+  canvas.addEventListener('touchend', e => {
+    if (!touchStart) return;
+    const dx = e.changedTouches[0].clientX - touchStart.clientX;
+    const dy = e.changedTouches[0].clientY - touchStart.clientY;
+    if (Math.abs(dx) > Math.abs(dy)) setDir(Math.sign(dx), 0);
+    else if (dy !== 0) setDir(0, Math.sign(dy));
+    touchStart = null;
+  }, {passive: true});
+
+  reset();
+  draw();
+})();
+</script>
+</body>
+</html>

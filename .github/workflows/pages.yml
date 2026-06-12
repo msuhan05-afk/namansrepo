@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, "claude/loving-volta-pl1Jv"]
+    branches: [main, "claude/loving-volta-pl1Jv", "claude/affectionate-rubin-xtt051"]
   workflow_dispatch:
 
 permissions:

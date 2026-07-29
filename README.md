@@ -1,22 +1,17 @@
-# Naman World Portfolio
+# Naman Mehra — Portfolio
 
-An immersive single-page portfolio for Naman Mehra built with Next.js 15, TypeScript, Tailwind CSS, Framer Motion, GSAP, Lenis, Lucide React, and shadcn/ui-style primitives.
-
-## Commands
-
-```bash
-npm install
-npm run dev
-npm run build
-```
+A simple, single-page portfolio site. Plain HTML/CSS/JS, no build step, no
+dependencies — deploys as static files.
 
 ## Structure
 
-- `app/` Next.js App Router entry points and global styles
-- `components/` shared app shell, XP system, and UI primitives
-- `sections/` world sections for the scrolling journey
-- `hooks/` Lenis and XP hooks
-- `data/` portfolio content
-- `types/` shared TypeScript types
-- `animations/` motion variants
-- `public/assets/` placeholder asset landing area
+- `index.html` — page content and structure
+- `styles.css` — styling
+- `script.js` — small bit of JS (footer year)
+
+## Run locally
+
+```bash
+python3 -m http.server 8000
+# then open http://localhost:8000/
+```
